@@ -115,11 +115,13 @@ const toggle = document.getElementById('toggle');
 const statusText = document.getElementById('status');
 const loopBtn = document.getElementById('loopBtn');
 
+const player = new Plyr(audio);
+
 let currentTrack = 0;
 let introDone = false;
 let loopEnabled = false;
 
-/* ---------------- PLAYLIST ---------------- */
+/* ---------------- PLAYLIST UI ---------------- */
 
 tracks.forEach((track, index) => {
   if (index === 0) return;
@@ -137,7 +139,7 @@ function updateActive() {
   });
 }
 
-/* ---------------- LOAD TRACK ---------------- */
+/* ---------------- TRACK LOADING ---------------- */
 
 function loadTrack(index, resumeTime = 0) {
   currentTrack = index;
@@ -150,7 +152,10 @@ function loadTrack(index, resumeTime = 0) {
     audio.removeEventListener('loadedmetadata', setTime);
   });
 
-  audio.play();
+  audio.play().catch(err => {
+    console.log("Play blocked:", err);
+  });
+
   updateActive();
 }
 
@@ -158,9 +163,11 @@ function loadTrack(index, resumeTime = 0) {
 
 audio.addEventListener('ended', () => {
 
-  // ---------------- INTRO FINISHED ----------------
-  if (currentTrack === 0) {
+  /* ---------------- INTRO FINISHED ---------------- */
+  if (!introDone && currentTrack === 0) {
     introDone = true;
+
+    player.volume = 0.10;
 
     const savedTrack = parseInt(localStorage.getItem("lastTrack"));
     const savedTime = parseFloat(localStorage.getItem("lastTime"));
@@ -168,9 +175,6 @@ audio.addEventListener('ended', () => {
 
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
-
-    player.volume = 0.05; // reset AFTER intro
-    player.media.dispatchEvent(new Event('volumechange'));
 
     let shouldResume =
       !isNaN(savedTrack) &&
@@ -194,7 +198,7 @@ audio.addEventListener('ended', () => {
     return;
   }
 
-  // ---------------- NORMAL PLAYBACK ----------------
+  /* ---------------- NORMAL PLAYBACK ---------------- */
   if (!loopEnabled) {
     let next = currentTrack + 1;
 
@@ -219,8 +223,7 @@ audio.addEventListener("timeupdate", () => {
 
 /* ---------------- VOLUME ---------------- */
 
-player.volume = 0.05; // DEFAULT ONLY (no persistence)
-player.media.dispatchEvent(new Event('volumechange'));
+player.volume = 0.10;
 
 /* ---------------- LOOP ---------------- */
 
@@ -239,17 +242,15 @@ toggle.onclick = () => {
     : "Show Playlist";
 };
 
-const player = new Plyr(audio);
-window.player = player;
-
 /* ---------------- INTRO START ---------------- */
 
 audio.src = tracks[0].file;
 
 setTimeout(() => {
   player.volume = 0.70;
-  audio.play();
-  player.media.dispatchEvent(new Event('volumechange'));
+  audio.play().catch(err => {
+    console.log("Intro play blocked:", err);
+  });
 }, 700);
 
 </script>
