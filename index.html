@@ -40,25 +40,12 @@ body {
   font-weight: 600;
 }
 
-#playlist { margin-top: 10px; }
-
-#status {
-  font-size: 12px;
-  opacity: 0.7;
-  margin-top: 10px;
-}
-
 #volumeBox {
   margin-top: 12px;
 }
 
-#volumeBox input {
+#volumeSlider {
   width: 100%;
-}
-
-#volumeValue {
-  font-size: 12px;
-  opacity: 0.7;
 }
 </style>
 </head>
@@ -67,16 +54,13 @@ body {
 
 <div class="player-wrapper">
 
-  <!-- IMPORTANT: native audio is source of truth -->
+  <!-- REAL AUDIO ENGINE -->
   <audio id="player" controls></audio>
-
-  <div id="status">Loading...</div>
 
   <div id="playlist"></div>
 
-  <!-- CUSTOM VOLUME (THIS STAYS NO MATTER WHAT) -->
   <div id="volumeBox">
-    <div id="volumeValue">Volume: 10%</div>
+    <div id="volLabel">Volume: 10%</div>
     <input id="volumeSlider" type="range" min="0" max="100" value="10">
   </div>
 
@@ -93,39 +77,42 @@ const tracks = [
   { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" }
 ];
 
-/* ---------------- STATE ---------------- */
+/* ---------------- ELEMENTS ---------------- */
 
 const audio = document.getElementById("player");
-const status = document.getElementById("status");
+const slider = document.getElementById("volumeSlider");
+const label = document.getElementById("volLabel");
 const playlist = document.getElementById("playlist");
-
-const volumeSlider = document.getElementById("volumeSlider");
-const volumeValue = document.getElementById("volumeValue");
-
-let currentTrack = 0;
-let introDone = false;
 
 /* ---------------- PLYR (UI ONLY) ---------------- */
 
 const player = new Plyr(audio);
 
-/* ---------------- VOLUME (REAL FIX) ---------------- */
+/* ---------------- VOLUME (REAL CONTROL POINT) ---------------- */
 
 function setVolume(v) {
   const val = Math.max(0, Math.min(100, Number(v)));
+
+  // THIS is the ONLY real audio control
   audio.volume = val / 100;
 
-  volumeSlider.value = val;
-  volumeValue.innerText = `Volume: ${val}%`;
+  // UI sync
+  slider.value = val;
+  label.innerText = `Volume: ${val}%`;
+
+  // force Plyr UI sync (important fix)
+  player.volume = val / 100;
 }
 
-volumeSlider.addEventListener("input", e => {
+slider.addEventListener("input", e => {
   setVolume(e.target.value);
 });
 
 setVolume(10);
 
 /* ---------------- PLAYLIST ---------------- */
+
+let currentTrack = 0;
 
 tracks.forEach((t, i) => {
   if (i === 0) return;
@@ -137,102 +124,32 @@ tracks.forEach((t, i) => {
   playlist.appendChild(div);
 });
 
-function updateActive() {
-  document.querySelectorAll(".track").forEach((el, i) => {
-    el.classList.toggle("active", i + 1 === currentTrack);
-  });
+/* ---------------- TRACK LOADING ---------------- */
+
+function loadTrack(i) {
+  currentTrack = i;
+  audio.src = tracks[i].file;
+  audio.play().catch(()=>{});
 }
 
-/* ---------------- LOAD TRACK ---------------- */
+/* ---------------- AUTOPLAY FIX ---------------- */
 
-function loadTrack(index, resumeTime = 0) {
-  currentTrack = index;
-
-  audio.src = tracks[index].file;
-
-  audio.onloadedmetadata = () => {
-    if (resumeTime) audio.currentTime = resumeTime;
-  };
-
-  audio.play().catch(() => {
-    status.innerText = "Tap play to start audio";
-  });
-
-  updateActive();
-}
-
-/* ---------------- INTRO FLOW (FIXED REALISTIC AUTOPLAY) ---------------- */
-
-function startIntro() {
+window.addEventListener("load", () => {
   audio.src = tracks[0].file;
 
-  setVolume(70);
-
-  const playPromise = audio.play();
-
-  if (playPromise !== undefined) {
-    playPromise
-      .then(() => {
-        status.innerText = "Playing intro...";
-      })
-      .catch(() => {
-        status.innerText = "Autoplay blocked — press play";
-      });
-  }
-}
-
-/* IMPORTANT: use earliest safe trigger */
-window.addEventListener("load", () => {
-  setTimeout(startIntro, 200);
+  setTimeout(() => {
+    audio.play().catch(()=>{});
+  }, 200);
 });
 
-/* ---------------- END LOGIC ---------------- */
+/* ---------------- DEBUG SAFETY ---------------- */
 
-audio.addEventListener("ended", () => {
-
-  if (!introDone && currentTrack === 0) {
-    introDone = true;
-
-    setVolume(10);
-
-    const savedTrack = parseInt(localStorage.getItem("lastTrack"));
-    const savedTime = parseFloat(localStorage.getItem("lastTime"));
-    const lastSession = parseInt(localStorage.getItem("lastSession"));
-
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
-
-    const shouldResume =
-      !isNaN(savedTrack) &&
-      savedTrack > 0 &&
-      lastSession &&
-      now - lastSession <= oneHour;
-
-    if (shouldResume) {
-      status.innerText = "Now Resuming...";
-      loadTrack(savedTrack, savedTime || 0);
-    } else {
-      loadTrack(1);
-    }
-
-    return;
-  }
-
-  let next = currentTrack + 1;
-
-  if (next >= tracks.length) {
-    audio.pause();
-  } else {
-    loadTrack(next);
-  }
-});
-
-/* ---------------- SAVE PROGRESS ---------------- */
-
-audio.addEventListener("timeupdate", () => {
-  localStorage.setItem("lastTrack", currentTrack);
-  localStorage.setItem("lastTime", audio.currentTime);
-  localStorage.setItem("lastSession", Date.now());
+// keep Plyr synced if anything else changes volume
+audio.addEventListener("volumechange", () => {
+  const v = audio.volume * 100;
+  slider.value = v;
+  label.innerText = `Volume: ${Math.round(v)}%`;
+  player.volume = audio.volume;
 });
 
 </script>
