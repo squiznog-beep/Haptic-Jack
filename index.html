@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Audio Player</title>
+
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css" />
+
+<style>
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #1a1a1a, #0d0d0d);
+  font-family: system-ui, sans-serif;
+  color: white;
+  display: flex;
+  justify-content: center;
+  padding: 40px 10px;
+}
+
+.player-wrapper {
+  width: 100%;
+  max-width: 480px;
+  backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 18px;
+  padding: 20px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+}
+
+#toggle {
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.7;
+  margin-bottom: 10px;
+}
+
+#playlist {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease;
+}
+
+#playlist.open {
+  max-height: 500px;
+}
+
+.track {
+  padding: 8px 0;
+  cursor: pointer;
+  font-size: 14px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.track:hover {
+  opacity: 1;
+}
+
+.track.active {
+  opacity: 1;
+  font-weight: 600;
+}
+</style>
+</head>
+
+<body>
+
+<div class="player-wrapper">
+  <audio id="player" controls></audio>
+  <div id="toggle">Show Playlist</div>
+  <div id="playlist"></div>
+</div>
+
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+
+<script>
+const tracks = [
+  { title: "Forest", file: "audio/forest.mp3" },
+  { title: "Rain", file: "audio/rain.mp3" },
+  { title: "Wind", file: "audio/wind.mp3" },
+  { title: "Track 4", file: "audio/track4.mp3" },
+  { title: "Track 5", file: "audio/track5.mp3" }
+  // Add up to 15 here
+];
+
+const audio = document.getElementById('player');
+const playlist = document.getElementById('playlist');
+const toggle = document.getElementById('toggle');
+
+let currentTrack = 0;
+
+function loadTrack(index) {
+  currentTrack = index;
+  audio.src = tracks[index].file;
+  audio.play();
+  updateActive();
+}
+
+function updateActive() {
+  document.querySelectorAll('.track').forEach((el, i) => {
+    el.classList.toggle('active', i === currentTrack);
+  });
+}
+
+tracks.forEach((track, index) => {
+  const div = document.createElement('div');
+  div.className = 'track';
+  div.innerText = track.title;
+  div.onclick = () => loadTrack(index);
+  playlist.appendChild(div);
+});
+
+audio.addEventListener('ended', () => {
+  let next = (currentTrack + 1) % tracks.length;
+  loadTrack(next);
+});
+
+toggle.onclick = () => {
+  playlist.classList.toggle('open');
+  toggle.innerText = playlist.classList.contains('open')
+    ? "Hide Playlist"
+    : "Show Playlist";
+};
+
+const player = new Plyr(audio);
+
+// Volume Memory
+if (localStorage.getItem("volume")) {
+  audio.volume = localStorage.getItem("volume");
+}
+
+audio.addEventListener("volumechange", () => {
+  localStorage.setItem("volume", audio.volume);
+});
+
+loadTrack(0);
+</script>
+
+</body>
+</html>
