@@ -99,10 +99,14 @@ body {
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
+/* ---------------- TRACKS ---------------- */
+
 const tracks = [
   { title: "Welcome (Back)", file: "Notes5.oga" },
   { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" }
 ];
+
+/* ---------------- STATE ---------------- */
 
 const audio = document.getElementById('player');
 const playlist = document.getElementById('playlist');
@@ -149,15 +153,18 @@ function loadTrack(index, resumeTime = 0) {
   updateActive();
 }
 
-/* ---------------- RESUME LOGIC ---------------- */
+/* ---------------- RESUME + FLOW ---------------- */
 
 audio.addEventListener('ended', () => {
-  if (!introDone) {
+
+  /* -------- INTRO FINISHED -------- */
+  if (!introDone && currentTrack === 0) {
     introDone = true;
 
+    // restore correct volume AFTER intro
     audio.volume = localStorage.getItem("volume")
-    ? parseFloat(localStorage.getItem("volume"))
-    : 0.15;
+      ? parseFloat(localStorage.getItem("volume"))
+      : 0.15;
 
     const savedTrack = parseInt(localStorage.getItem("lastTrack"));
     const savedTime = parseFloat(localStorage.getItem("lastTime"));
@@ -184,13 +191,21 @@ audio.addEventListener('ended', () => {
       loadTrack(1);
     }
 
-  } else {
-    if (!loopEnabled) {
+    return;
+  }
+
+  /* -------- NORMAL PLAYBACK -------- */
+  if (!loopEnabled) {
+    let next = currentTrack + 1;
+
+    if (next >= tracks.length) {
       audio.pause();
     } else {
-      audio.currentTime = 0;
-      audio.play();
+      loadTrack(next);
     }
+  } else {
+    audio.currentTime = 0;
+    audio.play();
   }
 });
 
@@ -210,18 +225,11 @@ if (localStorage.getItem("volume")) {
   audio.volume = 0.15;
 }
 
+/* SAVE ONLY AFTER INTRO */
 audio.addEventListener("volumechange", () => {
-  if (audio.dataset.intro === "true") return;
+  if (!introDone) return;
   localStorage.setItem("volume", audio.volume);
 });
-audio.dataset.intro = "true";
-
-setTimeout(() => {
-  audio.volume = 0.70;
-  audio.play();
-}, 2000);
-  introDone = true;
-audio.dataset.intro = "false";
 
 /* ---------------- LOOP ---------------- */
 
@@ -231,7 +239,7 @@ loopBtn.onclick = () => {
   loopBtn.classList.toggle("active");
 };
 
-/* ---------------- UI TOGGLE ---------------- */
+/* ---------------- UI ---------------- */
 
 toggle.onclick = () => {
   playlist.classList.toggle('open');
@@ -240,11 +248,9 @@ toggle.onclick = () => {
     : "Show Playlist";
 };
 
-/* ---------------- INIT ---------------- */
-
 const player = new Plyr(audio);
 
-/* INTRO SEQUENCE */
+/* ---------------- INTRO START ---------------- */
 
 audio.src = tracks[0].file;
 
@@ -252,6 +258,7 @@ setTimeout(() => {
   audio.volume = 0.70;
   audio.play();
 }, 2000);
+
 </script>
 
 </body>
