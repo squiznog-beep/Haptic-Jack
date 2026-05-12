@@ -99,6 +99,7 @@ body {
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
+
 /* ---------------- TRACKS ---------------- */
 
 const tracks = [
@@ -118,7 +119,7 @@ let currentTrack = 0;
 let introDone = false;
 let loopEnabled = false;
 
-/* ---------------- PLAYLIST UI ---------------- */
+/* ---------------- PLAYLIST ---------------- */
 
 tracks.forEach((track, index) => {
   if (index === 0) return;
@@ -136,7 +137,7 @@ function updateActive() {
   });
 }
 
-/* ---------------- TRACK LOADING ---------------- */
+/* ---------------- LOAD TRACK ---------------- */
 
 function loadTrack(index, resumeTime = 0) {
   currentTrack = index;
@@ -153,18 +154,13 @@ function loadTrack(index, resumeTime = 0) {
   updateActive();
 }
 
-/* ---------------- RESUME + FLOW ---------------- */
+/* ---------------- END LOGIC ---------------- */
 
 audio.addEventListener('ended', () => {
 
-  /* -------- INTRO FINISHED -------- */
+  /* INTRO FINISHED */
   if (!introDone && currentTrack === 0) {
     introDone = true;
-
-    // restore correct volume AFTER intro
-    audio.volume = localStorage.getItem("volume")
-      ? parseFloat(localStorage.getItem("volume"))
-      : 0.15;
 
     const savedTrack = parseInt(localStorage.getItem("lastTrack"));
     const savedTime = parseFloat(localStorage.getItem("lastTime"));
@@ -172,6 +168,9 @@ audio.addEventListener('ended', () => {
 
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
+
+    // DEFAULT VOLUME AFTER INTRO
+    audio.volume = 0.10;
 
     if (
       !isNaN(savedTrack) &&
@@ -185,7 +184,7 @@ audio.addEventListener('ended', () => {
 
       setTimeout(() => {
         statusText.classList.remove("show");
-      }, 2500);
+      }, 2000);
 
     } else {
       loadTrack(1);
@@ -194,7 +193,7 @@ audio.addEventListener('ended', () => {
     return;
   }
 
-  /* -------- NORMAL PLAYBACK -------- */
+  /* NORMAL FLOW */
   if (!loopEnabled) {
     let next = currentTrack + 1;
 
@@ -219,24 +218,14 @@ audio.addEventListener("timeupdate", () => {
 
 /* ---------------- VOLUME ---------------- */
 
-if (localStorage.getItem("volume")) {
-  audio.volume = parseFloat(localStorage.getItem("volume"));
-} else {
-  audio.volume = 0.15;
-}
-
-/* SAVE ONLY AFTER INTRO */
-audio.addEventListener("volumechange", () => {
-  if (!introDone) return;
-  localStorage.setItem("volume", audio.volume);
-});
+audio.volume = 0.10; // DEFAULT ONLY (no persistence)
 
 /* ---------------- LOOP ---------------- */
 
 loopBtn.onclick = () => {
   loopEnabled = !loopEnabled;
   loopBtn.innerText = loopEnabled ? "Loop: On" : "Loop: Off";
-  loopBtn.classList.toggle("active");
+  loopBtn.classList.toggle('active');
 };
 
 /* ---------------- UI ---------------- */
@@ -257,7 +246,7 @@ audio.src = tracks[0].file;
 setTimeout(() => {
   audio.volume = 0.70;
   audio.play();
-}, 2000);
+}, 1200);
 
 </script>
 
