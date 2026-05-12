@@ -169,7 +169,7 @@ audio.addEventListener('ended', () => {
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
 
-    player.volume = 0.07; // reset AFTER intro
+    player.volume = 0.05; // reset AFTER intro
     player.media.dispatchEvent(new Event('volumechange'));
 
     let shouldResume =
@@ -219,7 +219,7 @@ audio.addEventListener("timeupdate", () => {
 
 /* ---------------- VOLUME ---------------- */
 
-player.volume = 0.07; // DEFAULT ONLY (no persistence)
+player.volume = 0.05; // DEFAULT ONLY (no persistence)
 player.media.dispatchEvent(new Event('volumechange'));
 
 /* ---------------- LOOP ---------------- */
