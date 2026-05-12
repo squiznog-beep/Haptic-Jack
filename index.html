@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <title>Audio Player</title>
 
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
+
 <style>
 body {
   margin: 0;
@@ -17,21 +19,12 @@ body {
 
 .player-wrapper {
   width: 100%;
-  max-width: 480px;
-  backdrop-filter: blur(20px);
+  max-width: 520px;
   background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
   border-radius: 18px;
   padding: 20px;
   box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-}
-
-button {
-  margin: 5px 5px 10px 0;
-  padding: 6px 10px;
-  cursor: pointer;
-  border-radius: 6px;
-  border: none;
 }
 
 #playlist {
@@ -51,19 +44,6 @@ button {
   font-weight: 600;
 }
 
-#volumeBox {
-  margin-top: 15px;
-}
-
-#volumeBox input {
-  width: 100%;
-}
-
-#volumeBox input[type="number"] {
-  width: 70px;
-  margin-top: 6px;
-}
-
 #status {
   font-size: 12px;
   opacity: 0.7;
@@ -76,132 +56,141 @@ button {
 
 <div class="player-wrapper">
 
-  <!-- REAL AUDIO ELEMENT -->
+  <!-- MUST HAVE CONTROLS OR SOME BROWSERS COLLAPSE UI -->
   <audio id="player" controls></audio>
 
-  <!-- CONTROLS -->
-  <div>
-    <button id="playBtn">Play</button>
-    <button id="pauseBtn">Pause</button>
-    <button id="loopBtn">Loop: Off</button>
-  </div>
-
-  <div id="status">Idle</div>
+  <div id="status">Loading player...</div>
 
   <div id="playlist"></div>
 
-  <!-- VOLUME -->
-  <div id="volumeBox">
-    <label>Volume</label><br>
-    <input id="volSlider" type="range" min="0" max="100" value="10">
-    <input id="volInput" type="number" min="0" max="100" value="10">
-  </div>
-
 </div>
+
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
 
-/* ---------------- TRACKS ---------------- */
+document.addEventListener("DOMContentLoaded", () => {
 
-const tracks = [
-  { title: "Welcome (Back)", file: "Notes5.oga" },
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" }
-];
+  /* ---------------- TRACKS ---------------- */
 
-/* ---------------- STATE ---------------- */
+  const tracks = [
+    { title: "Welcome (Back)", file: "Notes5.oga" },
+    { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" }
+  ];
 
-const audio = document.getElementById("player");
-const playBtn = document.getElementById("playBtn");
-const pauseBtn = document.getElementById("pauseBtn");
-const loopBtn = document.getElementById("loopBtn");
-const playlist = document.getElementById("playlist");
-const status = document.getElementById("status");
+  /* ---------------- ELEMENTS ---------------- */
 
-const volSlider = document.getElementById("volSlider");
-const volInput = document.getElementById("volInput");
+  const audio = document.getElementById("player");
+  const status = document.getElementById("status");
+  const playlist = document.getElementById("playlist");
 
-let currentTrack = 0;
-let loopEnabled = false;
+  /* ---------------- INIT PLYR (CRITICAL ORDER FIX) ---------------- */
 
-/* ---------------- VOLUME ---------------- */
+  const player = new Plyr(audio);
 
-function setVolume(v) {
-  const clamped = Math.max(0, Math.min(100, Number(v)));
-  audio.volume = clamped / 100;
-  volSlider.value = clamped;
-  volInput.value = clamped;
-}
+  let currentTrack = 0;
+  let introDone = false;
 
-volSlider.addEventListener("input", e => setVolume(e.target.value));
-volInput.addEventListener("input", e => setVolume(e.target.value));
+  /* ---------------- PLAYLIST UI ---------------- */
 
-setVolume(10);
+  tracks.forEach((t, i) => {
+    if (i === 0) return;
 
-/* ---------------- PLAYER CONTROLS ---------------- */
-
-playBtn.onclick = () => audio.play();
-pauseBtn.onclick = () => audio.pause();
-
-/* ---------------- TRACK LOADING ---------------- */
-
-function loadTrack(index) {
-  currentTrack = index;
-  audio.src = tracks[index].file;
-  audio.play().catch(()=>{});
-  updateActive();
-}
-
-/* ---------------- PLAYLIST ---------------- */
-
-tracks.forEach((t, i) => {
-  if (i === 0) return;
-
-  const div = document.createElement("div");
-  div.className = "track";
-  div.innerText = t.title;
-  div.onclick = () => loadTrack(i);
-  playlist.appendChild(div);
-});
-
-function updateActive() {
-  document.querySelectorAll(".track").forEach((el, i) => {
-    el.classList.toggle("active", i + 1 === currentTrack);
+    const div = document.createElement("div");
+    div.className = "track";
+    div.innerText = t.title;
+    div.onclick = () => loadTrack(i);
+    playlist.appendChild(div);
   });
-}
 
-/* ---------------- LOOP ---------------- */
+  function updateActive() {
+    document.querySelectorAll(".track").forEach((el, i) => {
+      el.classList.toggle("active", i + 1 === currentTrack);
+    });
+  }
 
-loopBtn.onclick = () => {
-  loopEnabled = !loopEnabled;
-  loopBtn.innerText = loopEnabled ? "Loop: On" : "Loop: Off";
-};
+  /* ---------------- LOAD TRACK ---------------- */
 
-/* ---------------- END LOGIC ---------------- */
+  function loadTrack(index, resumeTime = 0) {
+    currentTrack = index;
+    audio.src = tracks[index].file;
 
-audio.addEventListener("ended", () => {
-  if (!loopEnabled) {
+    audio.addEventListener("loadedmetadata", function setTime() {
+      if (resumeTime > 0) audio.currentTime = resumeTime;
+      audio.removeEventListener("loadedmetadata", setTime);
+    });
+
+    audio.play().catch(() => {});
+    updateActive();
+  }
+
+  /* ---------------- INTRO START (FIXED RELIABLE TRIGGER) ---------------- */
+
+  audio.src = tracks[0].file;
+
+  audio.addEventListener("canplay", function startIntro() {
+    audio.removeEventListener("canplay", startIntro);
+
+    player.volume = 0.70;
+
+    audio.play()
+      .then(() => {
+        status.innerText = "Playing intro...";
+      })
+      .catch(() => {
+        status.innerText = "Click play to start audio";
+      });
+  });
+
+  /* ---------------- END LOGIC ---------------- */
+
+  audio.addEventListener("ended", () => {
+
+    if (!introDone && currentTrack === 0) {
+      introDone = true;
+
+      player.volume = 0.10;
+
+      const savedTrack = parseInt(localStorage.getItem("lastTrack"));
+      const savedTime = parseFloat(localStorage.getItem("lastTime"));
+      const lastSession = parseInt(localStorage.getItem("lastSession"));
+
+      const now = Date.now();
+      const oneHour = 60 * 60 * 1000;
+
+      let shouldResume =
+        !isNaN(savedTrack) &&
+        savedTrack > 0 &&
+        lastSession &&
+        now - lastSession <= oneHour;
+
+      if (shouldResume) {
+        status.innerText = "Now Resuming...";
+        loadTrack(savedTrack, savedTime || 0);
+      } else {
+        loadTrack(1);
+      }
+
+      return;
+    }
+
     let next = currentTrack + 1;
+
     if (next >= tracks.length) {
-      status.innerText = "Finished";
+      audio.pause();
     } else {
       loadTrack(next);
     }
-  } else {
-    audio.currentTime = 0;
-    audio.play();
-  }
-});
+  });
 
-/* ---------------- INTRO ---------------- */
+  /* ---------------- SAVE PROGRESS ---------------- */
 
-audio.src = tracks[0].file;
+  audio.addEventListener("timeupdate", () => {
+    localStorage.setItem("lastTrack", currentTrack);
+    localStorage.setItem("lastTime", audio.currentTime);
+    localStorage.setItem("lastSession", Date.now());
+  });
 
-audio.addEventListener("canplay", function introStart() {
-  audio.removeEventListener("canplay", introStart);
-
-  setVolume(70);
-
-  audio.play().catch(() => {});
 });
 
 </script>
