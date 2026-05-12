@@ -26,21 +26,16 @@ body {
   box-shadow: 0 10px 40px rgba(0,0,0,0.6);
 }
 
-#toggle {
+button {
+  margin: 5px 5px 10px 0;
+  padding: 6px 10px;
   cursor: pointer;
-  font-size: 14px;
-  opacity: 0.7;
-  margin: 10px 0;
+  border-radius: 6px;
+  border: none;
 }
 
 #playlist {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.4s ease;
-}
-
-#playlist.open {
-  max-height: 200px;
+  margin-top: 10px;
 }
 
 .track {
@@ -49,34 +44,9 @@ body {
   opacity: 0.7;
 }
 
-.track:hover {
-  opacity: 1;
-}
+.track:hover { opacity: 1; }
 
 .track.active {
-  opacity: 1;
-  font-weight: 600;
-}
-
-#status {
-  font-size: 12px;
-  opacity: 0;
-  margin-top: 8px;
-  transition: opacity 0.4s ease;
-}
-
-#status.show {
-  opacity: 0.8;
-}
-
-#loopBtn {
-  margin-top: 10px;
-  cursor: pointer;
-  font-size: 13px;
-  opacity: 0.6;
-}
-
-#loopBtn.active {
   opacity: 1;
   font-weight: 600;
 }
@@ -85,13 +55,19 @@ body {
   margin-top: 15px;
 }
 
-#volumeBox input[type="range"] {
+#volumeBox input {
   width: 100%;
 }
 
 #volumeBox input[type="number"] {
   width: 70px;
   margin-top: 6px;
+}
+
+#status {
+  font-size: 12px;
+  opacity: 0.7;
+  margin-top: 10px;
 }
 </style>
 </head>
@@ -100,16 +76,23 @@ body {
 
 <div class="player-wrapper">
 
-  <audio id="player"></audio>
+  <!-- REAL AUDIO ELEMENT -->
+  <audio id="player" controls></audio>
 
-  <div id="loopBtn">Loop: Off</div>
-  <div id="toggle">Show Playlist</div>
+  <!-- CONTROLS -->
+  <div>
+    <button id="playBtn">Play</button>
+    <button id="pauseBtn">Pause</button>
+    <button id="loopBtn">Loop: Off</button>
+  </div>
+
+  <div id="status">Idle</div>
+
   <div id="playlist"></div>
-  <div id="status">Now Resuming...</div>
 
-  <!-- VOLUME UI -->
+  <!-- VOLUME -->
   <div id="volumeBox">
-    <label style="font-size:12px;opacity:0.7;">Volume</label><br>
+    <label>Volume</label><br>
     <input id="volSlider" type="range" min="0" max="100" value="10">
     <input id="volInput" type="number" min="0" max="100" value="10">
   </div>
@@ -128,26 +111,23 @@ const tracks = [
 /* ---------------- STATE ---------------- */
 
 const audio = document.getElementById("player");
-const playlist = document.getElementById("playlist");
-const toggle = document.getElementById("toggle");
-const statusText = document.getElementById("status");
+const playBtn = document.getElementById("playBtn");
+const pauseBtn = document.getElementById("pauseBtn");
 const loopBtn = document.getElementById("loopBtn");
+const playlist = document.getElementById("playlist");
+const status = document.getElementById("status");
 
 const volSlider = document.getElementById("volSlider");
 const volInput = document.getElementById("volInput");
 
 let currentTrack = 0;
-let introDone = false;
 let loopEnabled = false;
 
 /* ---------------- VOLUME ---------------- */
 
 function setVolume(v) {
   const clamped = Math.max(0, Math.min(100, Number(v)));
-  const normalized = clamped / 100;
-
-  audio.volume = normalized;
-
+  audio.volume = clamped / 100;
   volSlider.value = clamped;
   volInput.value = clamped;
 }
@@ -157,15 +137,29 @@ volInput.addEventListener("input", e => setVolume(e.target.value));
 
 setVolume(10);
 
+/* ---------------- PLAYER CONTROLS ---------------- */
+
+playBtn.onclick = () => audio.play();
+pauseBtn.onclick = () => audio.pause();
+
+/* ---------------- TRACK LOADING ---------------- */
+
+function loadTrack(index) {
+  currentTrack = index;
+  audio.src = tracks[index].file;
+  audio.play().catch(()=>{});
+  updateActive();
+}
+
 /* ---------------- PLAYLIST ---------------- */
 
-tracks.forEach((track, index) => {
-  if (index === 0) return;
+tracks.forEach((t, i) => {
+  if (i === 0) return;
 
   const div = document.createElement("div");
   div.className = "track";
-  div.innerText = track.title;
-  div.onclick = () => loadTrack(index);
+  div.innerText = t.title;
+  div.onclick = () => loadTrack(i);
   playlist.appendChild(div);
 });
 
@@ -175,67 +169,20 @@ function updateActive() {
   });
 }
 
-/* ---------------- LOAD TRACK ---------------- */
+/* ---------------- LOOP ---------------- */
 
-function loadTrack(index, resumeTime = 0) {
-  currentTrack = index;
-  audio.src = tracks[index].file;
-
-  audio.addEventListener("loadedmetadata", function setTime() {
-    if (resumeTime > 0) {
-      audio.currentTime = resumeTime;
-    }
-    audio.removeEventListener("loadedmetadata", setTime);
-  });
-
-  audio.play().catch(err => {
-    console.log("Play blocked:", err);
-  });
-
-  updateActive();
-}
+loopBtn.onclick = () => {
+  loopEnabled = !loopEnabled;
+  loopBtn.innerText = loopEnabled ? "Loop: On" : "Loop: Off";
+};
 
 /* ---------------- END LOGIC ---------------- */
 
 audio.addEventListener("ended", () => {
-
-  if (!introDone && currentTrack === 0) {
-    introDone = true;
-
-    setVolume(10);
-
-    const savedTrack = parseInt(localStorage.getItem("lastTrack"));
-    const savedTime = parseFloat(localStorage.getItem("lastTime"));
-    const lastSession = parseInt(localStorage.getItem("lastSession"));
-
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
-
-    let shouldResume =
-      !isNaN(savedTrack) &&
-      savedTrack > 0 &&
-      lastSession &&
-      now - lastSession <= oneHour;
-
-    if (shouldResume) {
-      statusText.classList.add("show");
-
-      loadTrack(savedTrack, savedTime || 0);
-
-      setTimeout(() => statusText.classList.remove("show"), 2000);
-
-    } else {
-      loadTrack(1);
-    }
-
-    return;
-  }
-
   if (!loopEnabled) {
     let next = currentTrack + 1;
-
     if (next >= tracks.length) {
-      audio.pause();
+      status.innerText = "Finished";
     } else {
       loadTrack(next);
     }
@@ -245,32 +192,7 @@ audio.addEventListener("ended", () => {
   }
 });
 
-/* ---------------- SAVE PROGRESS ---------------- */
-
-audio.addEventListener("timeupdate", () => {
-  localStorage.setItem("lastTrack", currentTrack);
-  localStorage.setItem("lastTime", audio.currentTime);
-  localStorage.setItem("lastSession", Date.now());
-});
-
-/* ---------------- LOOP ---------------- */
-
-loopBtn.onclick = () => {
-  loopEnabled = !loopEnabled;
-  loopBtn.innerText = loopEnabled ? "Loop: On" : "Loop: Off";
-  loopBtn.classList.toggle("active");
-};
-
-/* ---------------- UI ---------------- */
-
-toggle.onclick = () => {
-  playlist.classList.toggle("open");
-  toggle.innerText = playlist.classList.contains("open")
-    ? "Hide Playlist"
-    : "Show Playlist";
-};
-
-/* ---------------- INTRO START ---------------- */
+/* ---------------- INTRO ---------------- */
 
 audio.src = tracks[0].file;
 
@@ -279,9 +201,7 @@ audio.addEventListener("canplay", function introStart() {
 
   setVolume(70);
 
-  audio.play().catch(err => {
-    console.log("Intro play blocked:", err);
-  });
+  audio.play().catch(() => {});
 });
 
 </script>
