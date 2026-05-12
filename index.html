@@ -155,6 +155,10 @@ audio.addEventListener('ended', () => {
   if (!introDone) {
     introDone = true;
 
+    audio.volume = localStorage.getItem("volume")
+    ? parseFloat(localStorage.getItem("volume"))
+    : 0.15;
+
     const savedTrack = parseInt(localStorage.getItem("lastTrack"));
     const savedTime = parseFloat(localStorage.getItem("lastTime"));
     const lastSession = parseInt(localStorage.getItem("lastSession"));
