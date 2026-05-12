@@ -158,8 +158,8 @@ function loadTrack(index, resumeTime = 0) {
 
 audio.addEventListener('ended', () => {
 
-  /* INTRO FINISHED */
-  if (!introDone && currentTrack === 0) {
+  // ---------------- INTRO FINISHED ----------------
+  if (currentTrack === 0) {
     introDone = true;
 
     const savedTrack = parseInt(localStorage.getItem("lastTrack"));
@@ -169,15 +169,15 @@ audio.addEventListener('ended', () => {
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
 
-    // DEFAULT VOLUME AFTER INTRO
-    audio.volume = 0.10;
+    audio.volume = 0.10; // reset AFTER intro
 
-    if (
+    let shouldResume =
       !isNaN(savedTrack) &&
       savedTrack > 0 &&
       lastSession &&
-      now - lastSession <= oneHour
-    ) {
+      now - lastSession <= oneHour;
+
+    if (shouldResume) {
       statusText.classList.add("show");
 
       loadTrack(savedTrack, savedTime || 0);
@@ -193,7 +193,7 @@ audio.addEventListener('ended', () => {
     return;
   }
 
-  /* NORMAL FLOW */
+  // ---------------- NORMAL PLAYBACK ----------------
   if (!loopEnabled) {
     let next = currentTrack + 1;
 
