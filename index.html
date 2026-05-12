@@ -169,7 +169,8 @@ audio.addEventListener('ended', () => {
     const now = Date.now();
     const oneHour = 60 * 60 * 1000;
 
-    audio.volume = 0.10; // reset AFTER intro
+    player.volume = 0.07; // reset AFTER intro
+    player.media.dispatchEvent(new Event('volumechange'));
 
     let shouldResume =
       !isNaN(savedTrack) &&
@@ -218,7 +219,8 @@ audio.addEventListener("timeupdate", () => {
 
 /* ---------------- VOLUME ---------------- */
 
-audio.volume = 0.10; // DEFAULT ONLY (no persistence)
+player.volume = 0.07; // DEFAULT ONLY (no persistence)
+player.media.dispatchEvent(new Event('volumechange'));
 
 /* ---------------- LOOP ---------------- */
 
@@ -238,15 +240,17 @@ toggle.onclick = () => {
 };
 
 const player = new Plyr(audio);
+window.player = player;
 
 /* ---------------- INTRO START ---------------- */
 
 audio.src = tracks[0].file;
 
 setTimeout(() => {
-  audio.volume = 0.70;
+  player.volume = 0.70;
   audio.play();
-}, 1200);
+  player.media.dispatchEvent(new Event('volumechange'));
+}, 700);
 
 </script>
 
