@@ -211,8 +211,17 @@ if (localStorage.getItem("volume")) {
 }
 
 audio.addEventListener("volumechange", () => {
+  if (audio.dataset.intro === "true") return;
   localStorage.setItem("volume", audio.volume);
 });
+audio.dataset.intro = "true";
+
+setTimeout(() => {
+  audio.volume = 0.70;
+  audio.play();
+}, 2000);
+  introDone = true;
+audio.dataset.intro = "false";
 
 /* ---------------- LOOP ---------------- */
 
