@@ -130,17 +130,17 @@ function updateActive() {
   });
 }
 
-function fadeInIntro() {
-  audio.volume = 0;
-  audio.play();
-  let fade = setInterval(() => {
-    if (audio.volume < 0.30) {
-      audio.volume += 0.03;
-    } else {
-      clearInterval(fade);
-    }
-  }, 200);
-}
+//function fadeInIntro() {
+//  audio.volume = 0;
+//  audio.play();
+//  let fade = setInterval(() => {
+//    if (audio.volume < 0.30) {
+//      audio.volume += 0.03;
+//    } else {
+//      clearInterval(fade);
+//    }
+//  }, 200);
+//}
 
 function loadTrack(index, resumeTime = 0) {
   currentTrack = index;
