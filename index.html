@@ -27,10 +27,6 @@ body {
   box-shadow: 0 10px 40px rgba(0,0,0,0.6);
 }
 
-#playlist {
-  margin-top: 10px;
-}
-
 .track {
   padding: 6px 0;
   cursor: pointer;
@@ -44,10 +40,25 @@ body {
   font-weight: 600;
 }
 
+#playlist { margin-top: 10px; }
+
 #status {
   font-size: 12px;
   opacity: 0.7;
   margin-top: 10px;
+}
+
+#volumeBox {
+  margin-top: 12px;
+}
+
+#volumeBox input {
+  width: 100%;
+}
+
+#volumeValue {
+  font-size: 12px;
+  opacity: 0.7;
 }
 </style>
 </head>
@@ -56,11 +67,18 @@ body {
 
 <div class="player-wrapper">
 
+  <!-- IMPORTANT: native audio is source of truth -->
   <audio id="player" controls></audio>
 
   <div id="status">Loading...</div>
 
   <div id="playlist"></div>
+
+  <!-- CUSTOM VOLUME (THIS STAYS NO MATTER WHAT) -->
+  <div id="volumeBox">
+    <div id="volumeValue">Volume: 10%</div>
+    <input id="volumeSlider" type="range" min="0" max="100" value="10">
+  </div>
 
 </div>
 
@@ -81,9 +99,31 @@ const audio = document.getElementById("player");
 const status = document.getElementById("status");
 const playlist = document.getElementById("playlist");
 
-let player;
+const volumeSlider = document.getElementById("volumeSlider");
+const volumeValue = document.getElementById("volumeValue");
+
 let currentTrack = 0;
-let introPlayed = false;
+let introDone = false;
+
+/* ---------------- PLYR (UI ONLY) ---------------- */
+
+const player = new Plyr(audio);
+
+/* ---------------- VOLUME (REAL FIX) ---------------- */
+
+function setVolume(v) {
+  const val = Math.max(0, Math.min(100, Number(v)));
+  audio.volume = val / 100;
+
+  volumeSlider.value = val;
+  volumeValue.innerText = `Volume: ${val}%`;
+}
+
+volumeSlider.addEventListener("input", e => {
+  setVolume(e.target.value);
+});
+
+setVolume(10);
 
 /* ---------------- PLAYLIST ---------------- */
 
@@ -107,49 +147,53 @@ function updateActive() {
 
 function loadTrack(index, resumeTime = 0) {
   currentTrack = index;
+
   audio.src = tracks[index].file;
 
   audio.onloadedmetadata = () => {
     if (resumeTime) audio.currentTime = resumeTime;
   };
 
-  audio.play().catch(()=>{});
+  audio.play().catch(() => {
+    status.innerText = "Tap play to start audio";
+  });
+
   updateActive();
 }
 
-/* ---------------- INIT (CRITICAL FIX ORDER) ---------------- */
+/* ---------------- INTRO FLOW (FIXED REALISTIC AUTOPLAY) ---------------- */
 
-window.addEventListener("load", () => {
-
-  // 1. SET FIRST TRACK BEFORE PLYR
+function startIntro() {
   audio.src = tracks[0].file;
 
-  // 2. INIT PLYR AFTER EVERYTHING EXISTS
-  player = new Plyr(audio);
+  setVolume(70);
 
-  player.volume = 0.70;
+  const playPromise = audio.play();
 
-  // 3. FORCE AUTOPLAY AFTER FULL WINDOW LOAD
-  setTimeout(() => {
-    audio.play()
+  if (playPromise !== undefined) {
+    playPromise
       .then(() => {
         status.innerText = "Playing intro...";
       })
       .catch(() => {
-        status.innerText = "Tap to start audio";
+        status.innerText = "Autoplay blocked — press play";
       });
-  }, 500);
+  }
+}
 
+/* IMPORTANT: use earliest safe trigger */
+window.addEventListener("load", () => {
+  setTimeout(startIntro, 200);
 });
 
 /* ---------------- END LOGIC ---------------- */
 
 audio.addEventListener("ended", () => {
 
-  if (!introPlayed && currentTrack === 0) {
-    introPlayed = true;
+  if (!introDone && currentTrack === 0) {
+    introDone = true;
 
-    player.volume = 0.10;
+    setVolume(10);
 
     const savedTrack = parseInt(localStorage.getItem("lastTrack"));
     const savedTime = parseFloat(localStorage.getItem("lastTime"));
