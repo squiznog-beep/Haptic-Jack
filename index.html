@@ -64,7 +64,7 @@ body {
   font-size: 12px;
   opacity: 0;
   margin-top: 8px;
-  transition: opacity 0.6s ease;
+  transition: opacity 0.4s ease;
 }
 
 #status.show {
@@ -89,6 +89,7 @@ body {
 
 <div class="player-wrapper">
   <audio id="player" controls></audio>
+
   <div id="loopBtn">Loop: Off</div>
   <div id="toggle">Show Playlist</div>
   <div id="playlist"></div>
@@ -99,7 +100,7 @@ body {
 
 <script>
 const tracks = [
-  { title: "Welcome (Back)", file: "Notes5.oga" }, // INTRO
+  { title: "Welcome (Back)", file: "Notes5.oga" },
   { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" }
 ];
 
@@ -110,10 +111,11 @@ const statusText = document.getElementById('status');
 const loopBtn = document.getElementById('loopBtn');
 
 let currentTrack = 0;
-let introFinished = false;
+let introDone = false;
 let loopEnabled = false;
 
-// Build playlist (skip intro visually)
+/* ---------------- PLAYLIST UI ---------------- */
+
 tracks.forEach((track, index) => {
   if (index === 0) return;
 
@@ -130,17 +132,7 @@ function updateActive() {
   });
 }
 
-//function fadeInIntro() {
-//  audio.volume = 0;
-//  audio.play();
-//  let fade = setInterval(() => {
-//    if (audio.volume < 0.30) {
-//      audio.volume += 0.03;
-//    } else {
-//      clearInterval(fade);
-//    }
-//  }, 200);
-//}
+/* ---------------- TRACK LOADING ---------------- */
 
 function loadTrack(index, resumeTime = 0) {
   currentTrack = index;
@@ -157,10 +149,11 @@ function loadTrack(index, resumeTime = 0) {
   updateActive();
 }
 
-// Resume logic (within 1 hour)
+/* ---------------- RESUME LOGIC ---------------- */
+
 audio.addEventListener('ended', () => {
-  if (!introFinished) {
-    introFinished = true;
+  if (!introDone) {
+    introDone = true;
 
     const savedTrack = parseInt(localStorage.getItem("lastTrack"));
     const savedTime = parseFloat(localStorage.getItem("lastTime"));
@@ -176,14 +169,17 @@ audio.addEventListener('ended', () => {
       now - lastSession <= oneHour
     ) {
       statusText.classList.add("show");
+
       loadTrack(savedTrack, savedTime || 0);
 
       setTimeout(() => {
         statusText.classList.remove("show");
-      }, 3000);
+      }, 2500);
+
     } else {
       loadTrack(1);
     }
+
   } else {
     if (!loopEnabled) {
       audio.pause();
@@ -194,32 +190,36 @@ audio.addEventListener('ended', () => {
   }
 });
 
-// Save progression
+/* ---------------- SAVE PROGRESS ---------------- */
+
 audio.addEventListener("timeupdate", () => {
   localStorage.setItem("lastTrack", currentTrack);
   localStorage.setItem("lastTime", audio.currentTime);
   localStorage.setItem("lastSession", Date.now());
 });
 
-// Volume memory with 30% default
+/* ---------------- VOLUME ---------------- */
+
 if (localStorage.getItem("volume")) {
-  audio.volume = localStorage.getItem("volume");
+  audio.volume = parseFloat(localStorage.getItem("volume"));
 } else {
-  audio.volume = 0.30;
+  audio.volume = 0.15;
 }
 
 audio.addEventListener("volumechange", () => {
   localStorage.setItem("volume", audio.volume);
 });
 
-// Loop toggle
+/* ---------------- LOOP ---------------- */
+
 loopBtn.onclick = () => {
   loopEnabled = !loopEnabled;
   loopBtn.innerText = loopEnabled ? "Loop: On" : "Loop: Off";
   loopBtn.classList.toggle("active");
 };
 
-// Playlist toggle
+/* ---------------- UI TOGGLE ---------------- */
+
 toggle.onclick = () => {
   playlist.classList.toggle('open');
   toggle.innerText = playlist.classList.contains('open')
@@ -227,11 +227,18 @@ toggle.onclick = () => {
     : "Show Playlist";
 };
 
+/* ---------------- INIT ---------------- */
+
 const player = new Plyr(audio);
 
-// ALWAYS start with Welcome (Back)
+/* INTRO SEQUENCE */
+
 audio.src = tracks[0].file;
-fadeInIntro();
+
+setTimeout(() => {
+  audio.volume = 0.70;
+  audio.play();
+}, 2000);
 </script>
 
 </body>
