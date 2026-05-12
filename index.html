@@ -100,7 +100,7 @@ body {
 
 <div class="player-wrapper">
 
-  <audio id="player" controls></audio>
+  <audio id="player"></audio>
 
   <div id="loopBtn">Loop: Off</div>
   <div id="toggle">Show Playlist</div>
@@ -140,7 +140,7 @@ let currentTrack = 0;
 let introDone = false;
 let loopEnabled = false;
 
-/* ---------------- VOLUME SYSTEM ---------------- */
+/* ---------------- VOLUME ---------------- */
 
 function setVolume(v) {
   const clamped = Math.max(0, Math.min(100, Number(v)));
@@ -199,7 +199,6 @@ function loadTrack(index, resumeTime = 0) {
 
 audio.addEventListener("ended", () => {
 
-  /* ---------------- INTRO FINISHED ---------------- */
   if (!introDone && currentTrack === 0) {
     introDone = true;
 
@@ -223,9 +222,7 @@ audio.addEventListener("ended", () => {
 
       loadTrack(savedTrack, savedTime || 0);
 
-      setTimeout(() => {
-        statusText.classList.remove("show");
-      }, 2000);
+      setTimeout(() => statusText.classList.remove("show"), 2000);
 
     } else {
       loadTrack(1);
@@ -234,7 +231,6 @@ audio.addEventListener("ended", () => {
     return;
   }
 
-  /* ---------------- NORMAL FLOW ---------------- */
   if (!loopEnabled) {
     let next = currentTrack + 1;
 
