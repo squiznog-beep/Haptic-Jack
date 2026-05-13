@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.08</title>
+<title>Haptic Player v0.08b</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -15,7 +15,7 @@ body {
   overflow: hidden;
 }
 
-/* ---------------- BOOT SCREEN ---------------- */
+/* ---------------- BOOT ---------------- */
 
 #boot {
   position: fixed;
@@ -26,6 +26,7 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
 /* TRIAGE HEADER */
@@ -34,6 +35,19 @@ body {
   color: red;
   letter-spacing: 4px;
   margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+}
+
+/* triangle FIX (lowered 2–3px) */
+.triangle {
+  width: 0.9em;
+  height: 0.9em;
+  background: red;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  margin: 0 6px;
+  display: inline-block;
+  transform: translateY(2px); /* FIXED ALIGNMENT */
 }
 
 /* fields */
@@ -47,9 +61,7 @@ body {
 }
 
 .label {
-  color: white;
   opacity: 0.7;
-  margin-bottom: 4px;
 }
 
 /* boot text */
@@ -57,7 +69,6 @@ body {
   margin-top: 40px;
   font-size: 18px;
   opacity: 0;
-  transition: opacity 1s ease;
 }
 
 /* ---------------- PLAYER ---------------- */
@@ -69,7 +80,6 @@ body {
   margin-top: 60px;
   background: rgba(255,255,255,0.05);
   border-radius: 16px;
-  backdrop-filter: blur(20px);
 }
 
 #playlist {
@@ -79,8 +89,8 @@ body {
 .track {
   text-align: center;
   padding: 6px;
-  transition: all 0.25s ease;
   opacity: 0.2;
+  transition: 0.25s;
 }
 
 .track.active {
@@ -92,11 +102,6 @@ body {
 .track.near {
   opacity: 0.5;
   transform: scale(0.95);
-}
-
-.track.far {
-  opacity: 0.1;
-  transform: scale(0.8);
 }
 
 /* ---------------- LOGO ---------------- */
@@ -123,9 +128,11 @@ body {
 
 <body>
 
-<!-- ---------------- BOOT ---------------- -->
+<!-- BOOT -->
 <div id="boot">
-  <div id="title">T R I 🔺 G E</div>
+  <div id="title">
+    T R I <span class="triangle"></span> G E
+  </div>
 
   <div class="label">Username</div>
   <div class="field" id="userField"></div>
@@ -136,7 +143,7 @@ body {
   <div id="bootText">INITIALIZING...</div>
 </div>
 
-<!-- ---------------- PLAYER ---------------- -->
+<!-- PLAYER -->
 <div class="wrapper">
   <audio id="player" playsinline></audio>
   <div id="playlist"></div>
@@ -145,20 +152,16 @@ body {
 <!-- LOGO -->
 <div id="logo">T R I 🔺 G E</div>
 
-<!-- VERSION -->
 <div id="version">
 Last Functional Build: 0.07b<br>
-Current Build: 0.08
+Current Build: 0.08b
 </div>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
 
-/* ---------------- TRACKS ---------------- */
-
 const tracks = [
-  { title: "Intro: Welcome (Back)", file: "Notes5.oga", type: "audio/ogg" },
   { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes.mp3", type: "audio/mp3" },
   { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg" },
   { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg" },
@@ -172,10 +175,12 @@ const player = new Plyr(audio);
 
 let currentTrack = 0;
 
-/* ---------------- PLAY TRACK ---------------- */
+/* ---------------- CLEAN AUDIO RESET (FIX PROLOGUE BUG) ---------------- */
 
 function playTrack(i) {
   currentTrack = i;
+
+  player.pause?.();
 
   player.source = {
     type: 'audio',
@@ -185,7 +190,9 @@ function playTrack(i) {
     }]
   };
 
-  player.play().catch(()=>{});
+  setTimeout(() => {
+    player.play().catch(()=>{});
+  }, 50);
 
   renderPlaylist();
 }
@@ -201,7 +208,6 @@ function renderPlaylist() {
   const end = Math.min(tracks.length - 1, currentTrack + 2);
 
   for (let i = start; i <= end; i++) {
-
     const el = document.createElement("div");
     el.className = "track";
 
@@ -215,10 +221,11 @@ function renderPlaylist() {
   }
 }
 
-/* ---------------- PASSWORD (FIXED PER-LETTER MASK) ---------------- */
+/* ---------------- PASSWORD (FIXED — NO FLASH BUG) ---------------- */
 
 function typePassword(el, text, cb) {
   let i = 0;
+  let masked = "";
 
   function step() {
     if (i >= text.length) {
@@ -226,22 +233,15 @@ function typePassword(el, text, cb) {
       return;
     }
 
-    // show one more real character
-    let visible = text.slice(0, i + 1);
-    el.innerText = visible;
+    masked += text[i]; // accumulate correctly
+
+    el.innerText = masked;
 
     setTimeout(() => {
-
-      // mask ONLY up to current progress
-      let masked = "";
-      for (let j = 0; j <= i; j++) masked += "*";
-
-      el.innerText = masked;
-
+      el.innerText = "*".repeat(masked.length);
       i++;
-      setTimeout(step, 100);
-
-    }, 100);
+      setTimeout(step, 120);
+    }, 120);
   }
 
   step();
@@ -261,11 +261,9 @@ function typeUser(el, text, cb) {
   }, 40);
 }
 
-/* ---------------- BOOT (1500ms FIX) ---------------- */
+/* ---------------- BOOT ---------------- */
 
 function boot() {
-
-  const startTime = performance.now();
 
   const u = document.getElementById("userField");
   const p = document.getElementById("passField");
@@ -278,19 +276,23 @@ function boot() {
       bootText.style.opacity = 1;
       bootText.innerText = "WELCOME BACK SUSAN";
 
-      const delay = 1500;
+      // SFX ONLY (NOT PLAYLIST): 1200ms after click
+      setTimeout(() => {
+        const sfx = new Audio("Notes5.oga");
+        sfx.play().catch(()=>{});
+      }, 1200);
 
       setTimeout(() => {
         document.getElementById("boot").style.display = "none";
         playTrack(0);
-      }, delay);
+      }, 1500);
 
     });
 
   });
 }
 
-/* ---------------- INIT ---------------- */
+/* INIT */
 
 window.addEventListener("click", boot, { once: true });
 window.addEventListener("load", renderPlaylist);
