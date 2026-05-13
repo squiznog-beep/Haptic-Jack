@@ -16,7 +16,7 @@
 <label>Volume</label>
 <input id="vol" type="range" min="0" max="100" step="1" value="10">
 
-<p id="status">Loading...</p>
+<p id="status">Ready</p>
 
 <script>
 
@@ -34,8 +34,7 @@ let currentTrack = 0;
 /* ---------------- VOLUME ---------------- */
 
 function setVolume(percent){
-  const value = percent / 100;
-  audio.volume = value;
+  audio.volume = percent / 100;
   vol.value = percent;
 }
 
@@ -55,44 +54,43 @@ function loadTrack(index){
 audio.addEventListener("ended", () => {
 
   if(currentTrack === 0){
-    // intro finished
     loadTrack(1);
-    setVolume(10); // drop to 10% AFTER intro
+    setVolume(10);
     audio.play();
   }
   else{
-    // end of playlist
     status.innerText = "Playback finished";
   }
 });
 
-/* ---------------- AUTOPLAY INTRO ---------------- */
+/* ---------------- AUTOPLAY INTRO (MUTED SAFE) ---------------- */
 
-function startIntro(){
+window.addEventListener("load", () => {
 
-  currentTrack = 0;
   loadTrack(0);
 
-  setVolume(70); // intro at 70%
+  // must start muted to bypass autoplay restriction
+  audio.muted = true;
 
-  audio.play()
-    .then(() => {
-      status.innerText = "Intro playing";
-    })
-    .catch(err => {
-      status.innerText = "Autoplay blocked";
-    });
-}
+  audio.play().then(() => {
 
-// initialize properly
-loadTrack(0);
-setVolume(10);
-status.innerText = "Ready";
+    // now unmute and raise volume
+    audio.muted = false;
+    setVolume(70);
 
-// autoplay on page load
-window.addEventListener("load", () => {
-  startIntro();
+    status.innerText = "Intro playing";
+
+  }).catch(() => {
+
+    status.innerText = "Autoplay blocked - press play";
+
+  });
+
 });
+
+/* ---------------- INIT ---------------- */
+
+setVolume(10);
 
 </script>
 
