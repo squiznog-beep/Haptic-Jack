@@ -42,31 +42,34 @@ vol.addEventListener("input", e => {
   setVolume(e.target.value);
 });
 
-/* ---------------- LOAD ---------------- */
+/* ---------------- CORE PLAY FUNCTION ---------------- */
 
-function loadTrack(index){
+function playTrack(index, volumePercent){
+
   currentTrack = index;
   audio.src = tracks[index];
-}
-
-/* ---------------- SAFE PLAY ---------------- */
-
-function safePlay(volumePercent){
 
   audio.muted = true;
 
-  audio.play().then(() => {
+  const playPromise = audio.play();
 
-    // Let playback stabilize first
-    setTimeout(() => {
-      audio.muted = false;
-      setVolume(volumePercent);
-    }, 150);
+  if(playPromise !== undefined){
+    playPromise.then(() => {
 
-  }).catch(() => {
-    status.innerText = "Autoplay blocked";
-  });
+      // Wait until browser confirms playback started
+      audio.addEventListener("playing", function handlePlaying(){
 
+        audio.removeEventListener("playing", handlePlaying);
+
+        audio.muted = false;
+        setVolume(volumePercent);
+
+      });
+
+    }).catch(() => {
+      status.innerText = "Autoplay blocked";
+    });
+  }
 }
 
 /* ---------------- AUTO NEXT ---------------- */
@@ -74,8 +77,8 @@ function safePlay(volumePercent){
 audio.addEventListener("ended", () => {
 
   if(currentTrack === 0){
-    loadTrack(1);
-    safePlay(10);
+    // Intro → Prologue
+    playTrack(1, 10);
   } else {
     status.innerText = "Playback finished";
   }
@@ -85,10 +88,7 @@ audio.addEventListener("ended", () => {
 /* ---------------- AUTOPLAY INTRO ---------------- */
 
 window.addEventListener("load", () => {
-
-  loadTrack(0);
-  safePlay(70);
-
+  playTrack(0, 70);
 });
 
 /* ---------------- INIT ---------------- */
