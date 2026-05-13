@@ -9,7 +9,7 @@
 
 <h3>Audio Player</h3>
 
-<audio id="audio" controls></audio>
+<audio id="audio" controls autoplay muted></audio>
 
 <br><br>
 
@@ -42,34 +42,22 @@ vol.addEventListener("input", e => {
   setVolume(e.target.value);
 });
 
-/* ---------------- CORE PLAY FUNCTION ---------------- */
+/* ---------------- LOAD TRACK ---------------- */
 
-function playTrack(index, volumePercent){
+function loadTrack(index, volumePercent){
 
   currentTrack = index;
   audio.src = tracks[index];
 
-  audio.muted = true;
+  audio.addEventListener("loadedmetadata", function initTrack(){
 
-  const playPromise = audio.play();
+    audio.removeEventListener("loadedmetadata", initTrack);
 
-  if(playPromise !== undefined){
-    playPromise.then(() => {
+    setVolume(volumePercent);
+    audio.muted = false;
 
-      // Wait until browser confirms playback started
-      audio.addEventListener("playing", function handlePlaying(){
+  });
 
-        audio.removeEventListener("playing", handlePlaying);
-
-        audio.muted = false;
-        setVolume(volumePercent);
-
-      });
-
-    }).catch(() => {
-      status.innerText = "Autoplay blocked";
-    });
-  }
 }
 
 /* ---------------- AUTO NEXT ---------------- */
@@ -77,18 +65,20 @@ function playTrack(index, volumePercent){
 audio.addEventListener("ended", () => {
 
   if(currentTrack === 0){
-    // Intro → Prologue
-    playTrack(1, 10);
+    loadTrack(1, 10);
+    audio.play();
   } else {
     status.innerText = "Playback finished";
   }
 
 });
 
-/* ---------------- AUTOPLAY INTRO ---------------- */
+/* ---------------- START INTRO ---------------- */
 
 window.addEventListener("load", () => {
-  playTrack(0, 70);
+
+  loadTrack(0, 70);
+
 });
 
 /* ---------------- INIT ---------------- */
