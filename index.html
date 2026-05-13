@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.07</title>
+<title>Haptic Player v0.08</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -15,7 +15,7 @@ body {
   overflow: hidden;
 }
 
-/* ---------------- TRIAGE SCREEN ---------------- */
+/* ---------------- BOOT SCREEN ---------------- */
 
 #boot {
   position: fixed;
@@ -28,7 +28,7 @@ body {
   justify-content: center;
 }
 
-/* header */
+/* TRIAGE HEADER */
 #title {
   font-size: 32px;
   color: red;
@@ -43,6 +43,7 @@ body {
   border-bottom: 1px solid #333;
   padding: 6px;
   font-size: 14px;
+  min-height: 20px;
 }
 
 .label {
@@ -98,6 +99,18 @@ body {
   transform: scale(0.8);
 }
 
+/* ---------------- LOGO ---------------- */
+
+#logo {
+  position: fixed;
+  bottom: 10px;
+  left: 12px;
+  font-size: 14px;
+  opacity: 0.7;
+}
+
+/* ---------------- VERSION ---------------- */
+
 #version {
   position: fixed;
   bottom: 10px;
@@ -110,9 +123,9 @@ body {
 
 <body>
 
-<!-- ---------------- BOOT OVERLAY ---------------- -->
+<!-- ---------------- BOOT ---------------- -->
 <div id="boot">
-  <div id="title">TRIAGE</div>
+  <div id="title">T R I 🔺 G E</div>
 
   <div class="label">Username</div>
   <div class="field" id="userField"></div>
@@ -124,17 +137,18 @@ body {
 </div>
 
 <!-- ---------------- PLAYER ---------------- -->
-
 <div class="wrapper">
-
-<audio id="player" playsinline></audio>
-<div id="playlist"></div>
-
+  <audio id="player" playsinline></audio>
+  <div id="playlist"></div>
 </div>
 
+<!-- LOGO -->
+<div id="logo">T R I 🔺 G E</div>
+
+<!-- VERSION -->
 <div id="version">
-Last Functional Build: 0.06<br>
-Current Build: 0.07
+Last Functional Build: 0.07b<br>
+Current Build: 0.08
 </div>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
@@ -145,8 +159,7 @@ Current Build: 0.07
 
 const tracks = [
   { title: "Intro: Welcome (Back)", file: "Notes5.oga", type: "audio/ogg" },
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3" },
-
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes.mp3", type: "audio/mp3" },
   { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg" },
   { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg" },
   { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg" },
@@ -155,74 +168,13 @@ const tracks = [
 ];
 
 const audio = document.getElementById("player");
-const playlistEl = document.getElementById("playlist");
+const player = new Plyr(audio);
 
 let currentTrack = 0;
-
-/* ---------------- PLYR ---------------- */
-
-const player = new Plyr(audio, {
-  controls: ['play', 'progress', 'mute', 'volume']
-});
-
-/* ---------------- AUDIO ANALYSER (FIXED) ---------------- */
-
-const ctx = new (window.AudioContext || window.webkitAudioContext)();
-let source = ctx.createMediaElementSource(audio);
-const analyser = ctx.createAnalyser();
-
-analyser.fftSize = 64;
-const data = new Uint8Array(analyser.frequencyBinCount);
-
-source.connect(analyser);
-analyser.connect(ctx.destination);
-
-function updateAudioReact() {
-
-  analyser.getByteFrequencyData(data);
-
-  let avg = data.reduce((a,b)=>a+b,0) / data.length;
-
-  const active = document.querySelector(".track.active");
-
-  if (active) {
-    active.style.textShadow =
-      avg > 120 ? "0 0 18px rgba(255,255,255,0.7)" :
-      avg > 60  ? "0 0 10px rgba(255,255,255,0.4)" :
-                  "0 0 4px rgba(255,255,255,0.15)";
-  }
-
-  requestAnimationFrame(updateAudioReact);
-}
-
-/* ---------------- PLAYLIST ---------------- */
-
-function renderPlaylist() {
-
-  playlistEl.innerHTML = "";
-
-  const start = Math.max(0, currentTrack - 2);
-  const end = Math.min(tracks.length - 1, currentTrack + 2);
-
-  for (let i = start; i <= end; i++) {
-
-    const el = document.createElement("div");
-    el.className = "track";
-    el.innerText = tracks[i].title;
-
-    if (i === currentTrack) el.classList.add("active");
-    else el.classList.add("near");
-
-    el.onclick = () => playTrack(i);
-
-    playlistEl.appendChild(el);
-  }
-}
 
 /* ---------------- PLAY TRACK ---------------- */
 
 function playTrack(i) {
-
   currentTrack = i;
 
   player.source = {
@@ -233,70 +185,105 @@ function playTrack(i) {
     }]
   };
 
-  renderPlaylist();
-
   player.play().catch(()=>{});
 
+  renderPlaylist();
 }
 
-/* ---------------- AUTO FLOW ---------------- */
+/* ---------------- PLAYLIST ---------------- */
 
-player.on("ended", () => {
-  if (currentTrack + 1 < tracks.length) {
-    playTrack(currentTrack + 1);
+const playlistEl = document.getElementById("playlist");
+
+function renderPlaylist() {
+  playlistEl.innerHTML = "";
+
+  const start = Math.max(0, currentTrack - 2);
+  const end = Math.min(tracks.length - 1, currentTrack + 2);
+
+  for (let i = start; i <= end; i++) {
+
+    const el = document.createElement("div");
+    el.className = "track";
+
+    if (i === currentTrack) el.classList.add("active");
+    else el.classList.add("near");
+
+    el.innerText = tracks[i].title;
+    el.onclick = () => playTrack(i);
+
+    playlistEl.appendChild(el);
   }
-});
+}
 
-/* ---------------- BOOT SEQUENCE ---------------- */
+/* ---------------- PASSWORD (FIXED PER-LETTER MASK) ---------------- */
 
-function typeText(el, text, speed, cb) {
-
+function typePassword(el, text, cb) {
   let i = 0;
 
   function step() {
-    if (i <= text.length) {
-      el.innerText = text.slice(0,i);
+    if (i >= text.length) {
+      cb?.();
+      return;
+    }
+
+    // show one more real character
+    let visible = text.slice(0, i + 1);
+    el.innerText = visible;
+
+    setTimeout(() => {
+
+      // mask ONLY up to current progress
+      let masked = "";
+      for (let j = 0; j <= i; j++) masked += "*";
+
+      el.innerText = masked;
+
       i++;
-      setTimeout(step, speed);
-    } else if (cb) cb();
+      setTimeout(step, 100);
+
+    }, 100);
   }
 
   step();
 }
 
-function startBoot() {
+/* ---------------- USER TYPE ---------------- */
+
+function typeUser(el, text, cb) {
+  let i = 0;
+
+  const t = setInterval(() => {
+    el.innerText = text.slice(0, i++);
+    if (i > text.length) {
+      clearInterval(t);
+      cb?.();
+    }
+  }, 40);
+}
+
+/* ---------------- BOOT (1500ms FIX) ---------------- */
+
+function boot() {
+
+  const startTime = performance.now();
 
   const u = document.getElementById("userField");
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
-  typeText(u, "SusanSurandin", 40, () => {
+  typeUser(u, "SusanSurandin", () => {
 
-    typeText(p, "WitnessMe", 40, () => {
+    typePassword(p, "WitnessMe", () => {
 
-      let dots = 0;
       bootText.style.opacity = 1;
+      bootText.innerText = "WELCOME BACK SUSAN";
 
-      const mask = setInterval(() => {
-        p.innerText = "*".repeat("WitnessMe".length);
-
-        dots++;
-        if (dots > 3) {
-          clearInterval(mask);
-          bootText.innerText = "WELCOME BACK SUSAN";
-        }
-      }, 300);
+      const delay = 1500;
 
       setTimeout(() => {
-
         document.getElementById("boot").style.display = "none";
-
-        ctx.resume().then(() => {
-          updateAudioReact();
-          playTrack(0);
-        });
-
-      }, 2000);
+        playTrack(0);
+      }, delay);
 
     });
 
@@ -305,11 +292,8 @@ function startBoot() {
 
 /* ---------------- INIT ---------------- */
 
-window.addEventListener("click", startBoot, { once: true });
-
-window.addEventListener("load", () => {
-  renderPlaylist();
-});
+window.addEventListener("click", boot, { once: true });
+window.addEventListener("load", renderPlaylist);
 
 </script>
 
