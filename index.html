@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.08d</title>
+<title>Haptic Player v0.09</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -15,7 +15,7 @@ body {
   overflow: hidden;
 }
 
-/* ---------------- TRIAGE SCREEN ---------------- */
+/* ---------------- BOOT ---------------- */
 
 #boot {
   position: fixed;
@@ -44,8 +44,36 @@ body {
   background: red;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   position: relative;
-  top: 2px; /* lowered slightly */
+  top: 2px;
 }
+
+/* Transition Overlay */
+
+#transition {
+  position: fixed;
+  inset: 0;
+  background: black;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  opacity: 0;
+  pointer-events: none;
+}
+
+#transition .triangle {
+  width: 120px;
+  height: 120px;
+  animation: spinPause 2s linear forwards;
+}
+
+@keyframes spinPause {
+  0% { transform: rotate(0deg) scale(0.5); }
+  50% { transform: rotate(180deg) scale(1.2); }
+  100% { transform: rotate(360deg) scale(8); }
+}
+
+/* Fields */
 
 .field {
   width: 260px;
@@ -56,9 +84,7 @@ body {
 }
 
 .label {
-  color: white;
   opacity: 0.7;
-  margin-bottom: 4px;
 }
 
 #bootText {
@@ -88,7 +114,6 @@ body {
   text-align: center;
   padding: 6px;
   transition: all 0.25s ease;
-  opacity: 0.2;
 }
 
 .track.active {
@@ -99,7 +124,12 @@ body {
 
 .track.near {
   opacity: 0.5;
-  transform: scale(0.95);
+  transform: scale(1);
+}
+
+.track.far {
+  opacity: 0.15;
+  transform: scale(0.85);
 }
 
 #logo {
@@ -125,10 +155,9 @@ body {
 
 <body>
 
-<!-- BOOT -->
 <div id="boot">
   <div id="title">
-    T R I  <div class="triangle"></div>  G E
+    T R I <div class="triangle"></div> G E
   </div>
 
   <div class="label">Username</div>
@@ -140,7 +169,10 @@ body {
   <div id="bootText">INITIALIZING...</div>
 </div>
 
-<!-- PLAYER -->
+<div id="transition">
+  <div class="triangle"></div>
+</div>
+
 <div class="wrapper">
   <audio id="player" playsinline></audio>
   <div id="playlist"></div>
@@ -151,11 +183,10 @@ body {
 </div>
 
 <div id="version">
-Last Functional Build: 0.08d<br>
-Current Build: 0.08d-2
+Last Functional Build: 0.08d-2<br>
+Current Build: 0.09
 </div>
 
-<!-- LOGIN SFX (separate from player) -->
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
@@ -165,42 +196,44 @@ Current Build: 0.08d-2
 /* ---------------- TRACKS ---------------- */
 
 const tracks = [
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3" },
-  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg" },
-  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg" },
-  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg" },
-  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg" },
-  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg" }
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3", volume: 0.1 },
+  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg", volume: 0.6 }
 ];
 
 const audio = document.getElementById("player");
 const playlistEl = document.getElementById("playlist");
 const loginSfx = document.getElementById("loginSfx");
+const transition = document.getElementById("transition");
+
+loginSfx.volume = 0.8;
 
 let currentTrack = 0;
-
-/* ---------------- PLYR (UNCHANGED STRUCTURE) ---------------- */
 
 const player = new Plyr(audio, {
   controls: ['play', 'progress', 'mute', 'volume']
 });
 
-/* ---------------- PLAYLIST ---------------- */
+/* ---------------- PLAYLIST WINDOW ---------------- */
 
 function renderPlaylist() {
+
   playlistEl.innerHTML = "";
 
-  const start = Math.max(0, currentTrack - 2);
-  const end = Math.min(tracks.length - 1, currentTrack + 2);
-
-  for (let i = start; i <= end; i++) {
+  for (let i = 0; i < tracks.length; i++) {
 
     const el = document.createElement("div");
     el.className = "track";
     el.innerText = tracks[i].title;
 
-    if (i === currentTrack) el.classList.add("active");
-    else el.classList.add("near");
+    const distance = Math.abs(i - currentTrack);
+
+    if (distance === 0) el.classList.add("active");
+    else if (distance <= 2) el.classList.add("near");
+    else el.classList.add("far");
 
     el.onclick = () => playTrack(i);
 
@@ -211,6 +244,7 @@ function renderPlaylist() {
 /* ---------------- PLAY TRACK ---------------- */
 
 function playTrack(i) {
+
   currentTrack = i;
 
   player.source = {
@@ -222,10 +256,13 @@ function playTrack(i) {
   };
 
   renderPlaylist();
+
+  player.once('playing', () => {
+    player.volume = tracks[i].volume;
+  });
+
   player.play().catch(()=>{});
 }
-
-/* ---------------- AUTO NEXT ---------------- */
 
 player.on("ended", () => {
   if (currentTrack + 1 < tracks.length) {
@@ -233,25 +270,21 @@ player.on("ended", () => {
   }
 });
 
-/* ---------------- PASSWORD FIXED ---------------- */
+/* ---------------- PASSWORD ---------------- */
 
 async function typePassword(el, text) {
 
-  let visible = "";
+  let masked = "";
 
   for (let i = 0; i < text.length; i++) {
 
-    visible += text[i];
-    el.innerText = visible;
-
+    el.innerText = masked + text[i];
     await new Promise(r => setTimeout(r, 100));
 
-    visible = "*".repeat(i + 1);
-    el.innerText = visible;
+    masked += "*";
+    el.innerText = masked;
   }
 }
-
-/* ---------------- USER ---------------- */
 
 function typeUser(el, text, cb) {
 
@@ -276,10 +309,9 @@ function startBoot() {
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
-  // Login SFX at 1500ms
   setTimeout(() => {
     loginSfx.play().catch(()=>{});
-  }, 1500);
+  }, 800);
 
   typeUser(u, "SusanSurandin", () => {
 
@@ -290,10 +322,15 @@ function startBoot() {
 
       setTimeout(() => {
 
-        document.getElementById("boot").style.display = "none";
-        playTrack(0);
+        transition.style.opacity = 1;
 
-      }, 2000);
+        setTimeout(() => {
+          document.getElementById("boot").style.display = "none";
+          transition.style.opacity = 0;
+          playTrack(0);
+        }, 2000);
+
+      }, 1500);
 
     });
 
