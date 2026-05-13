@@ -2,25 +2,21 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Audio Test</title>
+<title>Audio Player</title>
 </head>
 
 <body style="background:#111;color:white;font-family:sans-serif;padding:20px;">
 
-<h3>Audio Diagnostic</h3>
+<h3>Audio Player</h3>
 
 <audio id="audio" controls></audio>
 
 <br><br>
 
-<button onclick="start()">Start Intro</button>
-
-<br><br>
-
 <label>Volume</label>
-<input id="vol" type="range" min="0" max="100" value="10">
+<input id="vol" type="range" min="0" max="100" step="1" value="10">
 
-<p id="status">Idle</p>
+<p id="status">Loading...</p>
 
 <script>
 
@@ -33,41 +29,70 @@ const tracks = [
   "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3"
 ];
 
-let i = 0;
+let currentTrack = 0;
 
-/* volume */
-function setVolume(v){
-  audio.volume = v / 100;
-  vol.value = v;
+/* ---------------- VOLUME ---------------- */
+
+function setVolume(percent){
+  const value = percent / 100;
+  audio.volume = value;
+  vol.value = percent;
 }
-vol.oninput = e => setVolume(e.target.value);
-setVolume(10);
 
-/* autoplay test */
-function start(){
-  audio.src = tracks[0];
+vol.addEventListener("input", e => {
+  setVolume(e.target.value);
+});
+
+/* ---------------- LOAD TRACK ---------------- */
+
+function loadTrack(index){
+  currentTrack = index;
+  audio.src = tracks[index];
+}
+
+/* ---------------- AUTO NEXT ---------------- */
+
+audio.addEventListener("ended", () => {
+
+  if(currentTrack === 0){
+    // intro finished
+    loadTrack(1);
+    setVolume(10); // drop to 10% AFTER intro
+    audio.play();
+  }
+  else{
+    // end of playlist
+    status.innerText = "Playback finished";
+  }
+});
+
+/* ---------------- AUTOPLAY INTRO ---------------- */
+
+function startIntro(){
+
+  currentTrack = 0;
+  loadTrack(0);
+
+  setVolume(70); // intro at 70%
 
   audio.play()
     .then(() => {
       status.innerText = "Intro playing";
     })
     .catch(err => {
-      status.innerText = "Autoplay blocked: " + err;
+      status.innerText = "Autoplay blocked";
     });
 }
 
-/* auto next */
-audio.onended = () => {
-  i++;
+// initialize properly
+loadTrack(0);
+setVolume(10);
+status.innerText = "Ready";
 
-  if(i >= tracks.length){
-    status.innerText = "Done";
-    return;
-  }
-
-  audio.src = tracks[i];
-  audio.play();
-};
+// autoplay on page load
+window.addEventListener("load", () => {
+  startIntro();
+});
 
 </script>
 
