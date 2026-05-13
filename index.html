@@ -2,78 +2,101 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.06</title>
+<title>Haptic Player v0.07</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
 <style>
 body {
   margin: 0;
-  padding: 40px;
-  background: radial-gradient(circle at top, #1a1a1a, #0c0c0c);
-  font-family: system-ui, sans-serif;
+  background: black;
+  font-family: monospace;
   color: white;
+  overflow: hidden;
 }
 
-/* ---------------- WRAPPER ---------------- */
+/* ---------------- TRIAGE SCREEN ---------------- */
+
+#boot {
+  position: fixed;
+  inset: 0;
+  background: black;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* header */
+#title {
+  font-size: 32px;
+  color: red;
+  letter-spacing: 4px;
+  margin-bottom: 40px;
+}
+
+/* fields */
+.field {
+  width: 260px;
+  margin: 10px 0;
+  border-bottom: 1px solid #333;
+  padding: 6px;
+  font-size: 14px;
+}
+
+.label {
+  color: white;
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
+/* boot text */
+#bootText {
+  margin-top: 40px;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity 1s ease;
+}
+
+/* ---------------- PLAYER ---------------- */
 
 .wrapper {
   max-width: 520px;
   margin: auto;
   padding: 20px;
-  border-radius: 16px;
+  margin-top: 60px;
   background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 16px;
   backdrop-filter: blur(20px);
 }
-
-/* ---------------- PLAYLIST ---------------- */
 
 #playlist {
   margin-top: 20px;
 }
 
 .track {
-  cursor: pointer;
   text-align: center;
+  padding: 6px;
   transition: all 0.25s ease;
-  padding: 6px 0;
   opacity: 0.2;
-  transform: scale(0.75);
 }
 
-/* distance states */
-.track.near { opacity: 0.5; transform: scale(0.9); }
-.track.adjacent { opacity: 0.8; transform: scale(1.05); }
-
-/* ACTIVE BASE */
 .track.active {
+  font-weight: bold;
   opacity: 1;
-  transform: scale(1.35);
-  font-weight: 700;
-  transition: transform 0.1s ease, opacity 0.1s ease;
+  transform: scale(1.3);
 }
 
-/* AUDIO REACTIVE GLOW */
-.track.glow {
-  text-shadow: 0 0 6px rgba(255,255,255,0.25);
+.track.near {
+  opacity: 0.5;
+  transform: scale(0.95);
 }
 
-/* ---------------- GLOW INTENSITY ---------------- */
-
-.track.glow.low {
-  text-shadow: 0 0 4px rgba(255,255,255,0.15);
+.track.far {
+  opacity: 0.1;
+  transform: scale(0.8);
 }
-
-.track.glow.mid {
-  text-shadow: 0 0 10px rgba(255,255,255,0.35);
-}
-
-.track.glow.high {
-  text-shadow: 0 0 18px rgba(255,255,255,0.55);
-}
-
-/* ---------------- VERSION ---------------- */
 
 #version {
   position: fixed;
@@ -81,40 +104,37 @@ body {
   right: 12px;
   font-size: 11px;
   opacity: 0.5;
-  text-align: right;
-}
-
-/* ---------------- START OVERLAY ---------------- */
-
-#startLayer {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: rgba(0,0,0,0.65);
-  font-size: 18px;
-  cursor: pointer;
-  z-index: 999;
 }
 </style>
 </head>
 
 <body>
 
-<div id="startLayer">Click / Tap to Enter</div>
+<!-- ---------------- BOOT OVERLAY ---------------- -->
+<div id="boot">
+  <div id="title">TRIAGE</div>
+
+  <div class="label">Username</div>
+  <div class="field" id="userField"></div>
+
+  <div class="label">Password</div>
+  <div class="field" id="passField"></div>
+
+  <div id="bootText">INITIALIZING...</div>
+</div>
+
+<!-- ---------------- PLAYER ---------------- -->
 
 <div class="wrapper">
 
 <audio id="player" playsinline></audio>
-
 <div id="playlist"></div>
 
 </div>
 
 <div id="version">
-Last Functional Build: 0.05<br>
-Current Build: 0.06
+Last Functional Build: 0.06<br>
+Current Build: 0.07
 </div>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
@@ -136,33 +156,46 @@ const tracks = [
 
 const audio = document.getElementById("player");
 const playlistEl = document.getElementById("playlist");
-const startLayer = document.getElementById("startLayer");
 
 let currentTrack = 0;
-
-/* ---------------- AUDIO PRELOAD SYSTEM ---------------- */
-
-const preload = tracks.map(t => {
-  const a = new Audio();
-  a.src = t.file;
-  a.preload = "auto";
-  return a;
-});
 
 /* ---------------- PLYR ---------------- */
 
 const player = new Plyr(audio, {
-  controls: ['play', 'progress', 'current-time', 'mute', 'volume']
+  controls: ['play', 'progress', 'mute', 'volume']
 });
 
-/* ---------------- GESTURE START ---------------- */
+/* ---------------- AUDIO ANALYSER (FIXED) ---------------- */
 
-function startSystem(){
-  startLayer.style.display = "none";
-  playTrack(0);
+const ctx = new (window.AudioContext || window.webkitAudioContext)();
+let source = ctx.createMediaElementSource(audio);
+const analyser = ctx.createAnalyser();
+
+analyser.fftSize = 64;
+const data = new Uint8Array(analyser.frequencyBinCount);
+
+source.connect(analyser);
+analyser.connect(ctx.destination);
+
+function updateAudioReact() {
+
+  analyser.getByteFrequencyData(data);
+
+  let avg = data.reduce((a,b)=>a+b,0) / data.length;
+
+  const active = document.querySelector(".track.active");
+
+  if (active) {
+    active.style.textShadow =
+      avg > 120 ? "0 0 18px rgba(255,255,255,0.7)" :
+      avg > 60  ? "0 0 10px rgba(255,255,255,0.4)" :
+                  "0 0 4px rgba(255,255,255,0.15)";
+  }
+
+  requestAnimationFrame(updateAudioReact);
 }
 
-/* ---------------- PLAYLIST WINDOW ---------------- */
+/* ---------------- PLAYLIST ---------------- */
 
 function renderPlaylist() {
 
@@ -177,49 +210,13 @@ function renderPlaylist() {
     el.className = "track";
     el.innerText = tracks[i].title;
 
-    const d = Math.abs(i - currentTrack);
-
     if (i === currentTrack) el.classList.add("active");
-    else if (d === 1) el.classList.add("adjacent");
     else el.classList.add("near");
 
     el.onclick = () => playTrack(i);
 
     playlistEl.appendChild(el);
   }
-}
-
-/* ---------------- AUDIO REACTIVE VISUALS ---------------- */
-
-const ctx = new (window.AudioContext || window.webkitAudioContext)();
-const source = ctx.createMediaElementSource(audio);
-const analyser = ctx.createAnalyser();
-
-source.connect(analyser);
-analyser.connect(ctx.destination);
-
-analyser.fftSize = 64;
-const dataArray = new Uint8Array(analyser.frequencyBinCount);
-
-function updateGlow() {
-
-  analyser.getByteFrequencyData(dataArray);
-
-  let sum = 0;
-  for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
-
-  const avg = sum / dataArray.length;
-
-  const active = document.querySelector(".track.active");
-  if (!active) return;
-
-  active.classList.remove("low", "mid", "high");
-
-  if (avg < 40) active.classList.add("low");
-  else if (avg < 90) active.classList.add("mid");
-  else active.classList.add("high");
-
-  requestAnimationFrame(updateGlow);
 }
 
 /* ---------------- PLAY TRACK ---------------- */
@@ -238,8 +235,7 @@ function playTrack(i) {
 
   renderPlaylist();
 
-  const attempt = player.play();
-  if (attempt) attempt.catch(() => {});
+  player.play().catch(()=>{});
 
 }
 
@@ -251,15 +247,65 @@ player.on("ended", () => {
   }
 });
 
+/* ---------------- BOOT SEQUENCE ---------------- */
+
+function typeText(el, text, speed, cb) {
+
+  let i = 0;
+
+  function step() {
+    if (i <= text.length) {
+      el.innerText = text.slice(0,i);
+      i++;
+      setTimeout(step, speed);
+    } else if (cb) cb();
+  }
+
+  step();
+}
+
+function startBoot() {
+
+  const u = document.getElementById("userField");
+  const p = document.getElementById("passField");
+  const bootText = document.getElementById("bootText");
+
+  typeText(u, "SusanSurandin", 40, () => {
+
+    typeText(p, "WitnessMe", 40, () => {
+
+      let dots = 0;
+      bootText.style.opacity = 1;
+
+      const mask = setInterval(() => {
+        p.innerText = "*".repeat("WitnessMe".length);
+
+        dots++;
+        if (dots > 3) {
+          clearInterval(mask);
+          bootText.innerText = "WELCOME BACK SUSAN";
+        }
+      }, 300);
+
+      setTimeout(() => {
+
+        document.getElementById("boot").style.display = "none";
+
+        ctx.resume().then(() => {
+          updateAudioReact();
+          playTrack(0);
+        });
+
+      }, 2000);
+
+    });
+
+  });
+}
+
 /* ---------------- INIT ---------------- */
 
-startLayer.addEventListener("click", async () => {
-
-  await ctx.resume();
-  startSystem();
-  updateGlow();
-
-});
+window.addEventListener("click", startBoot, { once: true });
 
 window.addEventListener("load", () => {
   renderPlaylist();
