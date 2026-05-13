@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.07h</title>
+<title>Haptic Player v0.07f</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -26,34 +26,28 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
 }
 
-/* ============================= */
-/* FIXED TRIAGE LOGO (CONSISTENT) */
-/* ============================= */
-
+/* TRIAGE FIXED GLYPH SYSTEM */
 #title {
   color: red;
   font-size: 32px;
-  letter-spacing: 4px; /* FIX: prevents squish */
+  letter-spacing: 4px;
   margin-bottom: 30px;
   display: flex;
   align-items: center;
-  line-height: 1;
 }
 
-/* triangle matches font height EXACTLY */
 .triangle {
-  width: 0.85em;
-  height: 0.85em;
+  width: 0.9em;
+  height: 0.9em;
   background: red;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  display: inline-block;
   margin: 0 6px;
+  display: inline-block;
   transform: translateY(0.05em);
 }
-
-/* ---------------- FIELDS ---------------- */
 
 .field {
   width: 260px;
@@ -68,6 +62,11 @@ body {
   margin-top: 10px;
 }
 
+#bootText {
+  margin-top: 25px;
+  opacity: 0;
+}
+
 /* ---------------- PLAYER ---------------- */
 
 .wrapper {
@@ -79,8 +78,7 @@ body {
   border-radius: 16px;
 }
 
-/* ---------------- PLAYLIST WINDOW ---------------- */
-
+/* playlist window */
 #playlist {
   margin-top: 20px;
   text-align: center;
@@ -88,7 +86,7 @@ body {
 
 .track {
   opacity: 0.25;
-  transform: scale(0.85);
+  transform: scale(0.8);
   transition: 0.2s;
   padding: 4px;
 }
@@ -153,18 +151,16 @@ body {
 
 <div id="version">
 Last Functional Build: 0.07f<br>
-Current Build: 0.07h
+Current Build: 0.07f-fixed
 </div>
+
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
 
 const tracks = [
   { title: "Intro: Welcome (Back)", file: "Notes5.oga", type: "audio/ogg" },
-  {
-    title: "Prologue",
-    file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3",
-    type: "audio/mp3"
-  },
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes.mp3", type: "audio/mp3" },
   { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg" },
   { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg" },
   { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg" },
@@ -173,24 +169,24 @@ const tracks = [
 ];
 
 const audio = document.getElementById("player");
+const player = new Plyr(audio);
 
 let currentTrack = 0;
 
-/* ---------------- CLEAN PLAYBACK PIPELINE (FIX PROLOGUE) ---------------- */
+/* ---------------- PLAY TRACK (PLYR ONLY FIX) ---------------- */
 
 function playTrack(i) {
   currentTrack = i;
 
-  audio.pause();
-  audio.removeAttribute("src");
-  audio.load();
+  player.source = {
+    type: 'audio',
+    sources: [{
+      src: tracks[i].file,
+      type: tracks[i].type
+    }]
+  };
 
-  audio.src = tracks[i].file;
-
-  const playPromise = audio.play();
-  if (playPromise !== undefined) {
-    playPromise.catch(() => {});
-  }
+  player.play().catch(() => {});
 
   renderPlaylist();
 }
@@ -218,22 +214,22 @@ function renderPlaylist() {
   }
 }
 
-/* ---------------- BOOT (FIXED 1500ms TIMING) ---------------- */
+/* ---------------- BOOT FIXED (RELIABLE CLICK + 1500ms) ---------------- */
 
 function boot() {
 
-  const start = performance.now();
+  const startTime = performance.now();
 
   const u = document.getElementById("userField");
   const p = document.getElementById("passField");
+  const bootText = document.getElementById("bootText");
 
   u.innerText = "SusanSurandin";
 
   let pw = "WitnessMe";
-  let masked = "*".repeat(pw.length);
-  p.innerText = masked;
+  p.innerText = "*".repeat(pw.length);
 
-  const delay = Math.max(0, 1500 - (performance.now() - start));
+  const delay = 1500;
 
   setTimeout(() => {
     document.getElementById("boot").style.display = "none";
@@ -241,7 +237,15 @@ function boot() {
   }, delay);
 }
 
-window.addEventListener("click", boot, { once: true });
+/* FIX: bulletproof click handling */
+function bootOnce() {
+  document.removeEventListener("click", bootOnce);
+  boot();
+}
+
+document.addEventListener("click", bootOnce);
+document.getElementById("boot").addEventListener("click", bootOnce);
+
 window.addEventListener("load", renderPlaylist);
 
 </script>
