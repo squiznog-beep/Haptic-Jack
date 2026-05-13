@@ -28,23 +28,31 @@ body {
   justify-content: center;
 }
 
+/* TRIAGE FIXED GLYPH SYSTEM */
 #title {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 32px;
   color: red;
+  font-size: 32px;
   letter-spacing: 4px;
   margin-bottom: 30px;
+  display: flex;
+  align-items: center;
 }
 
-/* TRIANGLE (single source of truth) */
+/* every character INCLUDING triangle gets same box */
+.glyph {
+  display: inline-flex;
+  width: 1ch;
+  height: 1em;
+  align-items: center;
+  justify-content: center;
+}
+
+/* triangle matches font height now */
 .triangle {
-  width: 14px;
-  height: 14px;
+  width: 0.9em;
+  height: 0.9em;
   background: red;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  display: inline-block;
 }
 
 .field {
@@ -76,18 +84,23 @@ body {
   border-radius: 16px;
 }
 
-/* playlist */
-.track {
+/* playlist window */
+#playlist {
+  margin-top: 20px;
   text-align: center;
-  padding: 6px;
+}
+
+.track {
   opacity: 0.25;
+  transform: scale(0.8);
   transition: 0.2s;
+  padding: 4px;
 }
 
 .track.active {
   opacity: 1;
   font-weight: bold;
-  transform: scale(1.3);
+  transform: scale(1.35);
 }
 
 /* ---------------- LOGO ---------------- */
@@ -119,7 +132,12 @@ body {
 <!-- BOOT -->
 <div id="boot">
   <div id="title">
-    T R I <span class="triangle"></span> G E
+    <span class="glyph">T</span>
+    <span class="glyph">R</span>
+    <span class="glyph">I</span>
+    <span class="glyph triangle"></span>
+    <span class="glyph">G</span>
+    <span class="glyph">E</span>
   </div>
 
   <div class="label">Username</div>
@@ -143,7 +161,7 @@ body {
 </div>
 
 <div id="version">
-Last Functional Build: 0.07d<br>
+Last Functional Build: 0.07b<br>
 Current Build: 0.07e
 </div>
 
@@ -166,7 +184,7 @@ const player = new Plyr(audio);
 
 let currentTrack = 0;
 
-/* ---------------- PROLOGUE FIX (HARD RESET LOAD) ---------------- */
+/* ---------------- PLAY TRACK ---------------- */
 
 function playTrack(i) {
   currentTrack = i;
@@ -213,24 +231,23 @@ function renderPlaylist() {
   }
 }
 
-/* ---------------- PASSWORD (FIXED ORDER) ---------------- */
+/* ---------------- PASSWORD ---------------- */
 
 async function typePassword(el, text) {
   let out = "";
 
   for (let i = 0; i < text.length; i++) {
-
     out += text[i];
 
-    el.innerText = out;                 // LETTER FIRST
+    el.innerText = out;
     await new Promise(r => setTimeout(r, 100));
 
-    el.innerText = "*".repeat(out.length); // THEN MASK
+    el.innerText = "*".repeat(out.length);
     await new Promise(r => setTimeout(r, 100));
   }
 }
 
-/* ---------------- USER TYPE ---------------- */
+/* ---------------- USER ---------------- */
 
 function typeUser(el, text, cb) {
   let i = 0;
@@ -244,9 +261,11 @@ function typeUser(el, text, cb) {
   }, 40);
 }
 
-/* ---------------- BOOT (FIXED SYNC) ---------------- */
+/* ---------------- FIXED TIMED BOOT ---------------- */
 
 function boot() {
+
+  const startTime = performance.now();
 
   const u = document.getElementById("userField");
   const p = document.getElementById("passField");
@@ -256,18 +275,19 @@ function boot() {
 
     typePassword(p, "WitnessMe").then(() => {
 
-      // FIX: show text immediately
       bootText.style.opacity = 1;
       bootText.innerText = "WELCOME BACK SUSAN";
 
-      // FIX: slight audio lead-in compensation
+      // HARD TIMING LOCK: 2500ms after click
+      const delay = Math.max(0, 2500 - (performance.now() - startTime));
+
       setTimeout(() => {
         playTrack(0);
-      }, 200);
+      }, delay);
 
       setTimeout(() => {
         document.getElementById("boot").style.display = "none";
-      }, 1200);
+      }, delay + 1200);
 
     });
 
