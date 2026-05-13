@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.09a</title>
+<title>Haptic Player v0.09b</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -47,36 +47,25 @@ body {
   top: 2px;
 }
 
-/* ---------------- TRANSITION ---------------- */
+.label {
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
 
-#transition {
-  position: fixed;
-  inset: 0;
-  background: black;
-  z-index: 9998;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none;
+.field {
+  width: 260px;
+  border-bottom: 1px solid #333;
+  padding: 6px;
+  font-size: 14px;
+  min-height: 20px;
+  margin-bottom: 15px;
+}
+
+#bootText {
+  margin-top: 30px;
+  font-size: 18px;
   opacity: 0;
-}
-
-#transition.active {
-  opacity: 1;
-}
-
-#transitionTriangle {
-  width: 100px;
-  height: 100px;
-  background: red;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  animation: spinGrow 1.2s ease forwards;
-}
-
-@keyframes spinGrow {
-  0%   { transform: rotate(0deg) scale(0.5); }
-  50%  { transform: rotate(180deg) scale(1.5); }
-  100% { transform: rotate(360deg) scale(10); }
+  transition: opacity 0.5s ease;
 }
 
 /* ---------------- PLAYER ---------------- */
@@ -93,10 +82,10 @@ body {
 
 #playlist {
   margin-top: 20px;
+  text-align: center;
 }
 
 .track {
-  text-align: center;
   padding: 6px;
   transition: all 0.25s ease;
 }
@@ -140,6 +129,7 @@ body {
 
 <body>
 
+<!-- BOOT -->
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
@@ -154,10 +144,7 @@ body {
   <div id="bootText">INITIALIZING...</div>
 </div>
 
-<div id="transition">
-  <div id="transitionTriangle"></div>
-</div>
-
+<!-- PLAYER -->
 <div class="wrapper">
   <audio id="player" playsinline></audio>
   <div id="playlist"></div>
@@ -169,7 +156,7 @@ body {
 
 <div id="version">
 Last Functional Build: 0.08d-2<br>
-Current Build: 0.09a
+Current Build: 0.09b
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -192,7 +179,6 @@ const tracks = [
 const audio = document.getElementById("player");
 const playlistEl = document.getElementById("playlist");
 const loginSfx = document.getElementById("loginSfx");
-const transition = document.getElementById("transition");
 
 let currentTrack = 0;
 
@@ -202,7 +188,7 @@ const player = new Plyr(audio, {
   controls: ['play', 'progress', 'mute', 'volume']
 });
 
-/* ---------------- PLAYLIST ---------------- */
+/* ---------------- 5 TRACK WINDOW ---------------- */
 
 function renderPlaylist() {
 
@@ -210,14 +196,16 @@ function renderPlaylist() {
 
   for (let i = 0; i < tracks.length; i++) {
 
+    const distance = i - currentTrack;
+
+    if (Math.abs(distance) > 2) continue; // HARD LIMIT 5
+
     const el = document.createElement("div");
-    el.className = "track";
+    el.classList.add("track");
     el.innerText = tracks[i].title;
 
-    const distance = Math.abs(i - currentTrack);
-
     if (distance === 0) el.classList.add("active");
-    else if (distance <= 2) el.classList.add("near");
+    else if (Math.abs(distance) === 1) el.classList.add("near");
     else el.classList.add("far");
 
     el.onclick = () => playTrack(i);
@@ -241,7 +229,6 @@ function playTrack(i) {
   };
 
   renderPlaylist();
-
   player.volume = tracks[i].volume;
   player.play().catch(()=>{});
 }
@@ -252,19 +239,23 @@ player.on("ended", () => {
   }
 });
 
-/* ---------------- PASSWORD ---------------- */
+/* ---------------- PASSWORD (NO BLINKING) ---------------- */
 
 async function typePassword(el, text) {
 
   let masked = "";
 
   for (let i = 0; i < text.length; i++) {
+
     el.innerText = masked + text[i];
     await new Promise(r => setTimeout(r, 100));
+
     masked += "*";
     el.innerText = masked;
   }
 }
+
+/* ---------------- USER ---------------- */
 
 function typeUser(el, text, cb) {
 
@@ -289,11 +280,11 @@ function startBoot() {
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
-  /* Boost Notes5 using Web Audio */
+  /* 110% login SFX */
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const source = ctx.createMediaElementSource(loginSfx);
   const gain = ctx.createGain();
-  gain.gain.value = 1.1; // 110%
+  gain.gain.value = 1.1;
   source.connect(gain);
   gain.connect(ctx.destination);
 
@@ -310,16 +301,10 @@ function startBoot() {
 
       setTimeout(() => {
 
-        transition.classList.add("active");
+        document.getElementById("boot").style.display = "none";
+        playTrack(0);
 
-        setTimeout(() => {
-
-          document.getElementById("boot").style.display = "none";
-          playTrack(0);
-
-        }, 1200);
-
-      }, 1000);
+      }, 1500);
 
     });
 
