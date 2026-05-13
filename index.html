@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.03</title>
+<title>Haptic Player v0.04</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -14,6 +14,8 @@ body {
   font-family: system-ui, sans-serif;
   color: white;
 }
+
+/* ---------------- WRAPPER ---------------- */
 
 .wrapper {
   max-width: 520px;
@@ -31,23 +33,36 @@ body {
   margin-top: 20px;
 }
 
+/* base */
 .track {
   cursor: pointer;
   text-align: center;
-  opacity: 0.25;
-  transform: scale(0.85);
   transition: all 0.35s ease;
   padding: 6px 0;
 }
 
-.track.near {
-  opacity: 0.6;
-  transform: scale(1);
+/* farthest */
+.track.far {
+  opacity: 0.15;
+  transform: scale(0.75);
 }
 
+/* medium */
+.track.near {
+  opacity: 0.45;
+  transform: scale(0.9);
+}
+
+/* adjacent */
+.track.adjacent {
+  opacity: 0.75;
+  transform: scale(1.05);
+}
+
+/* active center */
 .track.active {
   opacity: 1;
-  transform: scale(1.25);
+  transform: scale(1.35);
   font-weight: 700;
 }
 
@@ -75,15 +90,15 @@ body {
 </div>
 
 <div id="version">
-Last Functional Build: 0.02<br>
-Current Build: 0.03
+Last Functional Build: 0.03<br>
+Current Build: 0.04
 </div>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
 
-/* ---------------- TRACK LIST ---------------- */
+/* ---------------- TRACKS ---------------- */
 
 const tracks = [
   { title: "Intro: Welcome (Back)", file: "Notes5.oga", type: "audio/ogg" },
@@ -101,16 +116,10 @@ const playlistEl = document.getElementById("playlist");
 
 let currentTrack = 0;
 
-/* ---------------- PLYR CORE ---------------- */
+/* ---------------- PLYR ---------------- */
 
 const player = new Plyr(audio, {
-  controls: [
-    'play',
-    'progress',
-    'current-time',
-    'mute',
-    'volume'
-  ]
+  controls: ['play', 'progress', 'current-time', 'mute', 'volume']
 });
 
 /* ---------------- PLAYLIST RENDER ---------------- */
@@ -124,14 +133,19 @@ function renderPlaylist() {
     el.className = "track";
     el.innerText = t.title;
 
-    const distance = Math.abs(i - currentTrack);
+    const d = Math.abs(i - currentTrack);
 
     if (i === currentTrack) {
       el.classList.add("active");
-    } else if (distance <= 2) {
+    } 
+    else if (d === 1) {
+      el.classList.add("adjacent");
+    } 
+    else if (d === 2) {
       el.classList.add("near");
-    } else {
-      el.style.display = "none";
+    } 
+    else {
+      el.classList.add("far");
     }
 
     el.onclick = () => playTrack(i);
@@ -160,12 +174,12 @@ function playTrack(i) {
 
   if (attempt !== undefined) {
     attempt.catch(() => {
-      console.log("Autoplay blocked or requires interaction");
+      console.log("Autoplay blocked (expected in Notion)");
     });
   }
 }
 
-/* ---------------- AUTO NEXT ---------------- */
+/* ---------------- AUTO FLOW ---------------- */
 
 player.on("ended", () => {
   if (currentTrack + 1 < tracks.length) {
