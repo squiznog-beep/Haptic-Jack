@@ -128,7 +128,7 @@ body {
 <!-- BOOT -->
 <div id="boot">
   <div id="title">
-    T R I <div class="triangle"></div> G E
+    T R I  <div class="triangle"></div>  G E
   </div>
 
   <div class="label">Username</div>
@@ -151,8 +151,8 @@ body {
 </div>
 
 <div id="version">
-Last Functional Build: 0.07b<br>
-Current Build: 0.08d
+Last Functional Build: 0.08d<br>
+Current Build: 0.08d-2
 </div>
 
 <!-- LOGIN SFX (separate from player) -->
@@ -276,10 +276,10 @@ function startBoot() {
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
-  // Login SFX at 800ms
+  // Login SFX at 1500ms
   setTimeout(() => {
     loginSfx.play().catch(()=>{});
-  }, 800);
+  }, 1500);
 
   typeUser(u, "SusanSurandin", () => {
 
