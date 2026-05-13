@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.09b</title>
+<title>Haptic Player v0.09c</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -155,8 +155,8 @@ body {
 </div>
 
 <div id="version">
-Last Functional Build: 0.08d-2<br>
-Current Build: 0.09b
+Last Functional Build: 0.09b<br>
+Current Build: 0.09c
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -182,13 +182,13 @@ const loginSfx = document.getElementById("loginSfx");
 
 let currentTrack = 0;
 
-/* ---------------- PLYR ---------------- */
+/* ---------------- PLYR (RESTORED CONTROLS) ---------------- */
 
 const player = new Plyr(audio, {
-  controls: ['play', 'progress', 'mute', 'volume']
+  controls: ['play', 'progress', 'current-time', 'mute', 'volume']
 });
 
-/* ---------------- 5 TRACK WINDOW ---------------- */
+/* ---------------- PLAYLIST ---------------- */
 
 function renderPlaylist() {
 
@@ -197,8 +197,7 @@ function renderPlaylist() {
   for (let i = 0; i < tracks.length; i++) {
 
     const distance = i - currentTrack;
-
-    if (Math.abs(distance) > 2) continue; // HARD LIMIT 5
+    if (Math.abs(distance) > 2) continue;
 
     const el = document.createElement("div");
     el.classList.add("track");
@@ -209,9 +208,16 @@ function renderPlaylist() {
     else el.classList.add("far");
 
     el.onclick = () => playTrack(i);
-
     playlistEl.appendChild(el);
   }
+}
+
+/* ---------------- FIXED VOLUME SYSTEM ---------------- */
+
+function applyVolume(i) {
+  requestAnimationFrame(() => {
+    player.volume = tracks[i].volume;
+  });
 }
 
 /* ---------------- PLAY TRACK ---------------- */
@@ -229,7 +235,11 @@ function playTrack(i) {
   };
 
   renderPlaylist();
-  player.volume = tracks[i].volume;
+
+  player.once('ready', () => applyVolume(i));
+  player.once('loadedmetadata', () => applyVolume(i));
+  player.once('playing', () => applyVolume(i));
+
   player.play().catch(()=>{});
 }
 
@@ -239,23 +249,19 @@ player.on("ended", () => {
   }
 });
 
-/* ---------------- PASSWORD (NO BLINKING) ---------------- */
+/* ---------------- PASSWORD ---------------- */
 
 async function typePassword(el, text) {
 
   let masked = "";
 
   for (let i = 0; i < text.length; i++) {
-
     el.innerText = masked + text[i];
     await new Promise(r => setTimeout(r, 100));
-
     masked += "*";
     el.innerText = masked;
   }
 }
-
-/* ---------------- USER ---------------- */
 
 function typeUser(el, text, cb) {
 
@@ -280,7 +286,6 @@ function startBoot() {
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
-  /* 110% login SFX */
   const ctx = new (window.AudioContext || window.webkitAudioContext)();
   const source = ctx.createMediaElementSource(loginSfx);
   const gain = ctx.createGain();
@@ -300,10 +305,8 @@ function startBoot() {
       bootText.innerText = "WELCOME BACK SUSAN";
 
       setTimeout(() => {
-
         document.getElementById("boot").style.display = "none";
         playTrack(0);
-
       }, 1500);
 
     });
