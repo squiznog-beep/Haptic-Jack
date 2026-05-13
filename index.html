@@ -2,187 +2,72 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Audio Player</title>
-
-<style>
-body {
-  margin: 0;
-  background: radial-gradient(circle at top, #1a1a1a, #0c0c0c);
-  font-family: system-ui, sans-serif;
-  color: white;
-  display: flex;
-  justify-content: center;
-  padding: 40px 10px;
-}
-
-.wrapper {
-  width: 100%;
-  max-width: 520px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 18px;
-  padding: 20px;
-  border: 1px solid rgba(255,255,255,0.1);
-}
-
-.track {
-  padding: 6px;
-  cursor: pointer;
-  opacity: 0.7;
-}
-.track:hover { opacity: 1; }
-.track.active { font-weight: 600; opacity: 1; }
-
-#volumeBox {
-  margin-top: 15px;
-}
-
-#volumeBox input {
-  width: 100%;
-}
-
-#status {
-  font-size: 12px;
-  opacity: 0.7;
-  margin-top: 10px;
-}
-</style>
+<title>Audio Test</title>
 </head>
 
-<body>
+<body style="background:#111;color:white;font-family:sans-serif;padding:20px;">
 
-<div class="wrapper">
+<h3>Audio Diagnostic</h3>
 
-  <!-- SINGLE SOURCE OF TRUTH -->
-  <audio id="audio" controls></audio>
+<audio id="audio" controls></audio>
 
-  <div id="status">Loading...</div>
+<br><br>
 
-  <div id="playlist"></div>
+<button onclick="start()">Start Intro</button>
 
-  <div id="volumeBox">
-    <div id="volLabel">Volume: 10%</div>
-    <input id="vol" type="range" min="0" max="100" value="10">
-  </div>
+<br><br>
 
-</div>
+<label>Volume</label>
+<input id="vol" type="range" min="0" max="100" value="10">
+
+<p id="status">Idle</p>
 
 <script>
 
-/* ---------------- TRACKS ---------------- */
-
-const tracks = [
-  { title: "Welcome (Back)", file: "Notes5.oga" },
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" }
-];
-
-/* ---------------- STATE ---------------- */
-
 const audio = document.getElementById("audio");
+const vol = document.getElementById("vol");
 const status = document.getElementById("status");
 
-const vol = document.getElementById("vol");
-const volLabel = document.getElementById("volLabel");
+const tracks = [
+  "Notes5.oga",
+  "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3"
+];
 
-let current = 0;
-let introPlayed = false;
+let i = 0;
 
-/* ---------------- VOLUME (REAL CONTROL) ---------------- */
-
-function setVolume(v) {
-  const val = Math.max(0, Math.min(100, Number(v)));
-  audio.volume = val / 100;
-  vol.value = val;
-  volLabel.innerText = `Volume: ${val}%`;
+/* volume */
+function setVolume(v){
+  audio.volume = v / 100;
+  vol.value = v;
 }
-
-vol.addEventListener("input", e => {
-  setVolume(e.target.value);
-});
-
+vol.oninput = e => setVolume(e.target.value);
 setVolume(10);
 
-/* ---------------- PLAY TRACK ---------------- */
+/* autoplay test */
+function start(){
+  audio.src = tracks[0];
 
-function playTrack(i, time = 0) {
-  current = i;
-  audio.src = tracks[i].file;
-
-  audio.onloadedmetadata = () => {
-    if (time) audio.currentTime = time;
-  };
-
-  audio.play().catch(() => {
-    status.innerText = "Click play to start audio";
-  });
-
-  renderActive();
-}
-
-/* ---------------- PLAYLIST ---------------- */
-
-const playlist = document.getElementById("playlist");
-
-tracks.forEach((t, i) => {
-  if (i === 0) return;
-
-  const div = document.createElement("div");
-  div.className = "track";
-  div.innerText = t.title;
-  div.onclick = () => playTrack(i);
-  playlist.appendChild(div);
-});
-
-function renderActive() {
-  document.querySelectorAll(".track").forEach((el, i) => {
-    el.classList.toggle("active", i + 1 === current);
-  });
-}
-
-/* ---------------- AUTOPLAY INTRO ---------------- */
-
-function startIntro() {
-  audio.src = tracks[0].file;
-
-  setVolume(70);
-
-  const p = audio.play();
-
-  if (p !== undefined) {
-    p.then(() => {
-      status.innerText = "Playing intro...";
-    }).catch(() => {
-      status.innerText = "Autoplay blocked — press play";
+  audio.play()
+    .then(() => {
+      status.innerText = "Intro playing";
+    })
+    .catch(err => {
+      status.innerText = "Autoplay blocked: " + err;
     });
-  }
 }
 
-/* ---------------- FLOW CONTROL ---------------- */
+/* auto next */
+audio.onended = () => {
+  i++;
 
-audio.addEventListener("ended", () => {
-
-  if (!introPlayed && current === 0) {
-    introPlayed = true;
-
-    setVolume(10);
-    playTrack(1);
-
+  if(i >= tracks.length){
+    status.innerText = "Done";
     return;
   }
 
-  let next = current + 1;
-
-  if (next < tracks.length) {
-    playTrack(next);
-  } else {
-    status.innerText = "Finished";
-  }
-});
-
-/* ---------------- INIT ---------------- */
-
-window.addEventListener("load", () => {
-  setTimeout(startIntro, 200);
-});
+  audio.src = tracks[i];
+  audio.play();
+};
 
 </script>
 
