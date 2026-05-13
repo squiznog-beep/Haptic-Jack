@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.07f</title>
+<title>Haptic Player v0.07g</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -13,6 +13,17 @@ body {
   font-family: monospace;
   color: white;
   overflow: hidden;
+}
+
+/* ---------------- MODE SWITCH ---------------- */
+body.login #logo,
+body.login #title {
+  letter-spacing: 7px; /* MORE spacing on login */
+}
+
+body.player #logo,
+body.player #title {
+  letter-spacing: 5px; /* LESS spacing on player */
 }
 
 /* ---------------- BOOT ---------------- */
@@ -28,77 +39,29 @@ body {
   justify-content: center;
 }
 
-/* FIXED LOGO (NO FLEX GARBAGE) */
+/* TITLE */
 #title {
   color: red;
   font-size: 32px;
-  letter-spacing: 6px; /* restores spacing */
   margin-bottom: 30px;
   display: flex;
   align-items: center;
 }
 
-/* triangle now EXACT same size as text */
+/* TRIANGLE FIXED ALIGNMENT */
 .triangle {
   width: 0.9em;
   height: 0.9em;
   background: red;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   display: inline-block;
-  margin: 0 6px; /* FIX spacing */
-  transform: translateY(1px);
+
+  /* FIX HEIGHT ALIGNMENT */
+  transform: translateY(-0.08em);
+  margin: 0 6px;
 }
 
-.field {
-  width: 260px;
-  border-bottom: 1px solid #333;
-  padding: 6px;
-  font-size: 14px;
-  min-height: 20px;
-}
-
-.label {
-  opacity: 0.7;
-  margin-top: 10px;
-}
-
-#bootText {
-  margin-top: 25px;
-  opacity: 0;
-}
-
-/* ---------------- PLAYER ---------------- */
-
-.wrapper {
-  max-width: 520px;
-  margin: auto;
-  margin-top: 60px;
-  padding: 20px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 16px;
-}
-
-/* playlist window */
-#playlist {
-  margin-top: 20px;
-  text-align: center;
-}
-
-.track {
-  opacity: 0.25;
-  transform: scale(0.8);
-  transition: 0.2s;
-  padding: 4px;
-}
-
-.track.active {
-  opacity: 1;
-  font-weight: bold;
-  transform: scale(1.35);
-}
-
-/* ---------------- LOGO ---------------- */
-
+/* PLAYER LOGO */
 #logo {
   position: fixed;
   bottom: 10px;
@@ -107,11 +70,6 @@ body {
   align-items: center;
   gap: 6px;
   opacity: 0.7;
-}
-
-#logo .triangle {
-  width: 10px;
-  height: 10px;
 }
 
 /* ---------------- VERSION ---------------- */
@@ -126,7 +84,7 @@ body {
 </style>
 </head>
 
-<body>
+<body class="login">
 
 <!-- BOOT -->
 <div id="boot">
@@ -140,7 +98,7 @@ body {
   <div class="label">Password</div>
   <div class="field" id="passField"></div>
 
-  <div id="bootText">INITIALIZING...</div>
+  <div id="bootText"></div>
 </div>
 
 <!-- PLAYER -->
@@ -156,16 +114,21 @@ body {
 
 <div id="version">
 Last Functional Build: 0.07b<br>
-Current Build: 0.07f
+Current Build: 0.07g
 </div>
-
-<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
 
 const tracks = [
   { title: "Intro: Welcome (Back)", file: "Notes5.oga", type: "audio/ogg" },
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes.mp3", type: "audio/mp3" },
+
+  // FIXED: RAW filename (NOT encoded URL)
+  {
+    title: "Prologue",
+    file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3",
+    type: "audio/mp3"
+  },
+
   { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg" },
   { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg" },
   { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg" },
@@ -174,26 +137,18 @@ const tracks = [
 ];
 
 const audio = document.getElementById("player");
-const player = new Plyr(audio);
 
 let currentTrack = 0;
 
-/* ---------------- FIXED SOURCE SYSTEM (NO DOUBLE BINDING) ---------------- */
+/* ---------------- PLAY TRACK ---------------- */
 
 function playTrack(i) {
   currentTrack = i;
 
-  player.source = {
-    type: 'audio',
-    sources: [{
-      src: tracks[i].file,
-      type: tracks[i].type
-    }]
-  };
-
-  player.once("loadeddata", () => {
-    player.play().catch(()=>{});
-  });
+  audio.pause();
+  audio.src = tracks[i].file;
+  audio.load();
+  audio.play().catch(()=>{});
 
   renderPlaylist();
 }
@@ -210,80 +165,34 @@ function renderPlaylist() {
 
   for (let i = start; i <= end; i++) {
     const el = document.createElement("div");
-    el.className = "track";
-
-    if (i === currentTrack) el.classList.add("active");
-
     el.innerText = tracks[i].title;
+
+    if (i === currentTrack) el.style.fontWeight = "bold";
+
     el.onclick = () => playTrack(i);
 
     playlistEl.appendChild(el);
   }
 }
 
-/* ---------------- PASSWORD ---------------- */
-
-async function typePassword(el, text) {
-  let out = "";
-
-  for (let i = 0; i < text.length; i++) {
-
-    out += text[i];
-    el.innerText = out;
-
-    await new Promise(r => setTimeout(r, 100));
-
-    el.innerText = "*".repeat(out.length);
-
-    await new Promise(r => setTimeout(r, 100));
-  }
-}
-
-/* ---------------- USER ---------------- */
-
-function typeUser(el, text, cb) {
-  let i = 0;
-
-  const t = setInterval(() => {
-    el.innerText = text.slice(0, i++);
-    if (i > text.length) {
-      clearInterval(t);
-      cb?.();
-    }
-  }, 40);
-}
-
-/* ---------------- BOOT TIMING FIX ---------------- */
+/* ---------------- BOOT ---------------- */
 
 function boot() {
 
   const start = performance.now();
 
-  const u = document.getElementById("userField");
-  const p = document.getElementById("passField");
-  const bootText = document.getElementById("bootText");
+  document.body.classList.remove("login");
+  document.body.classList.add("player");
 
-  typeUser(u, "SusanSurandin", () => {
+  const delay = Math.max(0, 1500 - (performance.now() - start));
 
-    typePassword(p, "WitnessMe").then(() => {
+  setTimeout(() => {
+    playTrack(0);
+  }, delay);
 
-      bootText.style.opacity = 1;
-      bootText.innerText = "WELCOME BACK SUSAN";
-
-      // FIXED: 2000ms target
-      const delay = Math.max(0, 2000 - (performance.now() - start));
-
-      setTimeout(() => {
-        playTrack(0);
-      }, delay);
-
-      setTimeout(() => {
-        document.getElementById("boot").style.display = "none";
-      }, delay + 1200);
-
-    });
-
-  });
+  setTimeout(() => {
+    document.getElementById("boot").style.display = "none";
+  }, delay + 1000);
 }
 
 window.addEventListener("click", boot, { once: true });
