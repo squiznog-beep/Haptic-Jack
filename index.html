@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.09c</title>
+<title>Haptic Player v0.09d</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -155,8 +155,8 @@ body {
 </div>
 
 <div id="version">
-Last Functional Build: 0.09b<br>
-Current Build: 0.09c
+Last Functional Build: 0.09c<br>
+Current Build: 0.09d
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -182,7 +182,7 @@ const loginSfx = document.getElementById("loginSfx");
 
 let currentTrack = 0;
 
-/* ---------------- PLYR (RESTORED CONTROLS) ---------------- */
+/* ---------------- PLYR ---------------- */
 
 const player = new Plyr(audio, {
   controls: ['play', 'progress', 'current-time', 'mute', 'volume']
@@ -212,12 +212,11 @@ function renderPlaylist() {
   }
 }
 
-/* ---------------- FIXED VOLUME SYSTEM ---------------- */
+/* ---------------- FIX: SINGLE SOURCE OF TRUTH VOLUME ---------------- */
 
-function applyVolume(i) {
-  requestAnimationFrame(() => {
-    player.volume = tracks[i].volume;
-  });
+function setVolumeOnce(i) {
+  // only set volume after player is fully ready
+  player.volume = tracks[i].volume;
 }
 
 /* ---------------- PLAY TRACK ---------------- */
@@ -236,12 +235,13 @@ function playTrack(i) {
 
   renderPlaylist();
 
-  player.once('ready', () => applyVolume(i));
-  player.once('loadedmetadata', () => applyVolume(i));
-  player.once('playing', () => applyVolume(i));
+  // CRITICAL FIX: only ONE lifecycle hook (prevents UI collapse)
+  player.once('ready', () => setVolumeOnce(i));
 
-  player.play().catch(()=>{});
+  player.play().catch(() => {});
 }
+
+/* ---------------- AUTO NEXT ---------------- */
 
 player.on("ended", () => {
   if (currentTrack + 1 < tracks.length) {
@@ -249,19 +249,7 @@ player.on("ended", () => {
   }
 });
 
-/* ---------------- PASSWORD ---------------- */
-
-async function typePassword(el, text) {
-
-  let masked = "";
-
-  for (let i = 0; i < text.length; i++) {
-    el.innerText = masked + text[i];
-    await new Promise(r => setTimeout(r, 100));
-    masked += "*";
-    el.innerText = masked;
-  }
-}
+/* ---------------- BOOT ---------------- */
 
 function typeUser(el, text, cb) {
 
@@ -278,7 +266,17 @@ function typeUser(el, text, cb) {
   step();
 }
 
-/* ---------------- BOOT ---------------- */
+async function typePassword(el, text) {
+
+  let masked = "";
+
+  for (let i = 0; i < text.length; i++) {
+    el.innerText = masked + text[i];
+    await new Promise(r => setTimeout(r, 100));
+    masked += "*";
+    el.innerText = masked;
+  }
+}
 
 function startBoot() {
 
@@ -294,7 +292,7 @@ function startBoot() {
   gain.connect(ctx.destination);
 
   setTimeout(() => {
-    loginSfx.play().catch(()=>{});
+    loginSfx.play().catch(() => {});
   }, 800);
 
   typeUser(u, "SusanSurandin", () => {
