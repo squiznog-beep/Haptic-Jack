@@ -2,7 +2,9 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player</title>
+<title>Haptic Player v0.03</title>
+
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
 <style>
 body {
@@ -27,29 +29,26 @@ body {
 
 #playlist {
   margin-top: 20px;
-  max-height: 240px;
-  overflow: hidden;
-  position: relative;
 }
 
 .track {
   cursor: pointer;
   text-align: center;
-  transition: all 0.35s ease;
   opacity: 0.25;
-  transform: scale(0.8);
+  transform: scale(0.85);
+  transition: all 0.35s ease;
   padding: 6px 0;
-}
-
-.track.active {
-  font-weight: 700;
-  opacity: 1;
-  transform: scale(1.25);
 }
 
 .track.near {
   opacity: 0.6;
   transform: scale(1);
+}
+
+.track.active {
+  opacity: 1;
+  transform: scale(1.25);
+  font-weight: 700;
 }
 
 /* ---------------- VERSION ---------------- */
@@ -60,7 +59,6 @@ body {
   right: 12px;
   font-size: 11px;
   opacity: 0.5;
-  line-height: 1.4;
   text-align: right;
 }
 </style>
@@ -70,46 +68,67 @@ body {
 
 <div class="wrapper">
 
-<audio id="audio" controls></audio>
+<audio id="player" playsinline></audio>
 
 <div id="playlist"></div>
 
 </div>
 
 <div id="version">
-Last Functional Build: 0.01<br>
-Current Build: 0.02
+Last Functional Build: 0.02<br>
+Current Build: 0.03
 </div>
+
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
 
+/* ---------------- TRACK LIST ---------------- */
+
 const tracks = [
-  { title: "Welcome (Back)", file: "Notes5.oga", volume: 0.70 },
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.10 }
+  { title: "Intro: Welcome (Back)", file: "Notes5.oga", type: "audio/ogg" },
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3" },
+
+  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg" },
+  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg" },
+  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg" },
+  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg" },
+  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg" }
 ];
 
-const audio = document.getElementById("audio");
-const playlist = document.getElementById("playlist");
+const audio = document.getElementById("player");
+const playlistEl = document.getElementById("playlist");
 
 let currentTrack = 0;
 
-/* ---------------- RENDER PLAYLIST WINDOW ---------------- */
+/* ---------------- PLYR CORE ---------------- */
 
-function renderPlaylist(){
+const player = new Plyr(audio, {
+  controls: [
+    'play',
+    'progress',
+    'current-time',
+    'mute',
+    'volume'
+  ]
+});
 
-  playlist.innerHTML = "";
+/* ---------------- PLAYLIST RENDER ---------------- */
 
-  for(let i = 0; i < tracks.length; i++){
+function renderPlaylist() {
+  playlistEl.innerHTML = "";
+
+  tracks.forEach((t, i) => {
 
     const el = document.createElement("div");
     el.className = "track";
-    el.innerText = tracks[i].title;
+    el.innerText = t.title;
 
-    let distance = Math.abs(i - currentTrack);
+    const distance = Math.abs(i - currentTrack);
 
-    if(i === currentTrack){
+    if (i === currentTrack) {
       el.classList.add("active");
-    } else if(distance === 1 || distance === 2){
+    } else if (distance <= 2) {
       el.classList.add("near");
     } else {
       el.style.display = "none";
@@ -117,63 +136,47 @@ function renderPlaylist(){
 
     el.onclick = () => playTrack(i);
 
-    playlist.appendChild(el);
-  }
+    playlistEl.appendChild(el);
+  });
 }
 
-/* ---------------- VOLUME ---------------- */
+/* ---------------- PLAY TRACK ---------------- */
 
-function setVolume(v){
-  audio.volume = v;
-}
-
-/* ---------------- PLAY ---------------- */
-
-function playTrack(i){
+function playTrack(i) {
 
   currentTrack = i;
-  audio.src = tracks[i].file;
 
-  audio.muted = true;
-
-  audio.play().then(() => {
-
-    setTimeout(() => {
-      audio.muted = false;
-      setVolume(tracks[i].volume);
-    }, 120);
-
-  });
+  player.source = {
+    type: 'audio',
+    sources: [{
+      src: tracks[i].file,
+      type: tracks[i].type
+    }]
+  };
 
   renderPlaylist();
+
+  const attempt = player.play();
+
+  if (attempt !== undefined) {
+    attempt.catch(() => {
+      console.log("Autoplay blocked or requires interaction");
+    });
+  }
 }
 
-/* ---------------- AUTO FLOW ---------------- */
+/* ---------------- AUTO NEXT ---------------- */
 
-audio.addEventListener("ended", () => {
-
-  if(currentTrack === 0){
-    playTrack(1);
+player.on("ended", () => {
+  if (currentTrack + 1 < tracks.length) {
+    playTrack(currentTrack + 1);
   }
-
-});
-
-/* ---------------- SCROLL CONTROL ---------------- */
-
-playlist.addEventListener("wheel", (e) => {
-
-  if(e.deltaY > 0){
-    currentTrack = Math.min(currentTrack + 1, tracks.length - 1);
-  } else {
-    currentTrack = Math.max(currentTrack - 1, 0);
-  }
-
-  renderPlaylist();
 });
 
 /* ---------------- INIT ---------------- */
 
 window.addEventListener("load", () => {
+  renderPlaylist();
   playTrack(0);
 });
 
