@@ -49,42 +49,42 @@ function loadTrack(index){
   audio.src = tracks[index];
 }
 
+/* ---------------- SAFE PLAY FUNCTION ---------------- */
+
+function safePlay(volumePercent){
+
+  audio.muted = true;
+
+  audio.play().then(() => {
+    audio.muted = false;
+    setVolume(volumePercent);
+  }).catch(() => {
+    status.innerText = "Playback blocked";
+  });
+
+}
+
 /* ---------------- AUTO NEXT ---------------- */
 
 audio.addEventListener("ended", () => {
 
   if(currentTrack === 0){
+    // Intro finished → go to Prologue
     loadTrack(1);
-    setVolume(10);
-    audio.play();
+    safePlay(10); // play prologue at 10%
   }
   else{
     status.innerText = "Playback finished";
   }
+
 });
 
-/* ---------------- AUTOPLAY INTRO (MUTED SAFE) ---------------- */
+/* ---------------- AUTOPLAY INTRO ---------------- */
 
 window.addEventListener("load", () => {
 
   loadTrack(0);
-
-  // must start muted to bypass autoplay restriction
-  audio.muted = true;
-
-  audio.play().then(() => {
-
-    // now unmute and raise volume
-    audio.muted = false;
-    setVolume(70);
-
-    status.innerText = "Intro playing";
-
-  }).catch(() => {
-
-    status.innerText = "Autoplay blocked - press play";
-
-  });
+  safePlay(70); // intro at 70%
 
 });
 
