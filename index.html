@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.09</title>
+<title>Haptic Player v0.09a</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -47,51 +47,36 @@ body {
   top: 2px;
 }
 
-/* Transition Overlay */
+/* ---------------- TRANSITION ---------------- */
 
 #transition {
   position: fixed;
   inset: 0;
   background: black;
+  z-index: 9998;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9998;
-  opacity: 0;
   pointer-events: none;
-}
-
-#transition .triangle {
-  width: 120px;
-  height: 120px;
-  animation: spinPause 2s linear forwards;
-}
-
-@keyframes spinPause {
-  0% { transform: rotate(0deg) scale(0.5); }
-  50% { transform: rotate(180deg) scale(1.2); }
-  100% { transform: rotate(360deg) scale(8); }
-}
-
-/* Fields */
-
-.field {
-  width: 260px;
-  margin: 10px 0;
-  border-bottom: 1px solid #333;
-  padding: 6px;
-  font-size: 14px;
-}
-
-.label {
-  opacity: 0.7;
-}
-
-#bootText {
-  margin-top: 40px;
-  font-size: 18px;
   opacity: 0;
-  transition: opacity 1s ease;
+}
+
+#transition.active {
+  opacity: 1;
+}
+
+#transitionTriangle {
+  width: 100px;
+  height: 100px;
+  background: red;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  animation: spinGrow 1.2s ease forwards;
+}
+
+@keyframes spinGrow {
+  0%   { transform: rotate(0deg) scale(0.5); }
+  50%  { transform: rotate(180deg) scale(1.5); }
+  100% { transform: rotate(360deg) scale(10); }
 }
 
 /* ---------------- PLAYER ---------------- */
@@ -170,7 +155,7 @@ body {
 </div>
 
 <div id="transition">
-  <div class="triangle"></div>
+  <div id="transitionTriangle"></div>
 </div>
 
 <div class="wrapper">
@@ -184,7 +169,7 @@ body {
 
 <div id="version">
 Last Functional Build: 0.08d-2<br>
-Current Build: 0.09
+Current Build: 0.09a
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -209,15 +194,15 @@ const playlistEl = document.getElementById("playlist");
 const loginSfx = document.getElementById("loginSfx");
 const transition = document.getElementById("transition");
 
-loginSfx.volume = 0.8;
-
 let currentTrack = 0;
+
+/* ---------------- PLYR ---------------- */
 
 const player = new Plyr(audio, {
   controls: ['play', 'progress', 'mute', 'volume']
 });
 
-/* ---------------- PLAYLIST WINDOW ---------------- */
+/* ---------------- PLAYLIST ---------------- */
 
 function renderPlaylist() {
 
@@ -257,10 +242,7 @@ function playTrack(i) {
 
   renderPlaylist();
 
-  player.once('playing', () => {
-    player.volume = tracks[i].volume;
-  });
-
+  player.volume = tracks[i].volume;
   player.play().catch(()=>{});
 }
 
@@ -277,10 +259,8 @@ async function typePassword(el, text) {
   let masked = "";
 
   for (let i = 0; i < text.length; i++) {
-
     el.innerText = masked + text[i];
     await new Promise(r => setTimeout(r, 100));
-
     masked += "*";
     el.innerText = masked;
   }
@@ -309,6 +289,14 @@ function startBoot() {
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
+  /* Boost Notes5 using Web Audio */
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const source = ctx.createMediaElementSource(loginSfx);
+  const gain = ctx.createGain();
+  gain.gain.value = 1.1; // 110%
+  source.connect(gain);
+  gain.connect(ctx.destination);
+
   setTimeout(() => {
     loginSfx.play().catch(()=>{});
   }, 800);
@@ -322,15 +310,16 @@ function startBoot() {
 
       setTimeout(() => {
 
-        transition.style.opacity = 1;
+        transition.classList.add("active");
 
         setTimeout(() => {
-          document.getElementById("boot").style.display = "none";
-          transition.style.opacity = 0;
-          playTrack(0);
-        }, 2000);
 
-      }, 1500);
+          document.getElementById("boot").style.display = "none";
+          playTrack(0);
+
+        }, 1200);
+
+      }, 1000);
 
     });
 
