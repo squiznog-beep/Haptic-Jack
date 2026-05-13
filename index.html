@@ -4,8 +4,6 @@
 <meta charset="utf-8">
 <title>Haptic Player</title>
 
-<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
-
 <style>
 body {
   margin: 0;
@@ -16,46 +14,54 @@ body {
 }
 
 .wrapper {
-  max-width: 500px;
+  max-width: 520px;
   margin: auto;
-  backdrop-filter: blur(20px);
-  background: rgba(255,255,255,0.05);
   padding: 20px;
   border-radius: 16px;
+  background: rgba(255,255,255,0.05);
   border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(20px);
 }
+
+/* ---------------- PLAYLIST ---------------- */
 
 #playlist {
   margin-top: 20px;
+  max-height: 240px;
+  overflow: hidden;
+  position: relative;
 }
 
 .track {
   cursor: pointer;
-  opacity: 0.7;
-  padding: 5px 0;
-}
-
-.track:hover {
-  opacity: 1;
+  text-align: center;
+  transition: all 0.35s ease;
+  opacity: 0.25;
+  transform: scale(0.8);
+  padding: 6px 0;
 }
 
 .track.active {
-  font-weight: bold;
+  font-weight: 700;
   opacity: 1;
+  transform: scale(1.25);
 }
 
-#status {
-  font-size: 12px;
+.track.near {
   opacity: 0.6;
-  margin-top: 10px;
+  transform: scale(1);
 }
+
+/* ---------------- VERSION ---------------- */
 
 #version {
   position: fixed;
-  bottom: 8px;
+  bottom: 10px;
   right: 12px;
   font-size: 11px;
-  opacity: 0.4;
+  opacity: 0.5;
+  line-height: 1.4;
+  text-align: right;
 }
 </style>
 </head>
@@ -64,17 +70,16 @@ body {
 
 <div class="wrapper">
 
-<audio id="player" playsinline></audio>
+<audio id="audio" controls></audio>
 
 <div id="playlist"></div>
 
-<div id="status">Initializing...</div>
-
 </div>
 
-<div id="version">v0.01</div>
-
-<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+<div id="version">
+Last Functional Build: 0.01<br>
+Current Build: 0.02
+</div>
 
 <script>
 
@@ -83,91 +88,93 @@ const tracks = [
   { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.10 }
 ];
 
-const audio = document.getElementById("player");
-const playlistEl = document.getElementById("playlist");
-const status = document.getElementById("status");
+const audio = document.getElementById("audio");
+const playlist = document.getElementById("playlist");
 
 let currentTrack = 0;
 
-const player = new Plyr(audio, {
-  controls: [
-    'play',
-    'progress',
-    'current-time',
-    'mute',
-    'volume'
-  ]
-});
+/* ---------------- RENDER PLAYLIST WINDOW ---------------- */
 
-/* ---------------- PLAYLIST BUILD ---------------- */
+function renderPlaylist(){
 
-tracks.forEach((track, index) => {
+  playlist.innerHTML = "";
 
-  const div = document.createElement("div");
-  div.className = "track";
-  div.innerText = track.title;
+  for(let i = 0; i < tracks.length; i++){
 
-  div.onclick = () => {
-    playTrack(index);
-  };
+    const el = document.createElement("div");
+    el.className = "track";
+    el.innerText = tracks[i].title;
 
-  playlistEl.appendChild(div);
-});
+    let distance = Math.abs(i - currentTrack);
 
-/* ---------------- UI UPDATE ---------------- */
+    if(i === currentTrack){
+      el.classList.add("active");
+    } else if(distance === 1 || distance === 2){
+      el.classList.add("near");
+    } else {
+      el.style.display = "none";
+    }
 
-function updateActive(){
-  document.querySelectorAll(".track").forEach((el, i)=>{
-    el.classList.toggle("active", i === currentTrack);
-  });
+    el.onclick = () => playTrack(i);
+
+    playlist.appendChild(el);
+  }
 }
 
-/* ---------------- PLAY TRACK ---------------- */
+/* ---------------- VOLUME ---------------- */
 
-function playTrack(index){
-
-  currentTrack = index;
-
-  player.source = {
-    type: 'audio',
-    sources: [
-      {
-        src: tracks[index].file,
-        type: tracks[index].file.endsWith(".oga") ? "audio/ogg" : "audio/mp3"
-      }
-    ]
-  };
-
-  updateActive();
-
-  player.muted = true;
-
-  player.play().then(()=>{
-    player.volume = tracks[index].volume;
-    player.muted = false;
-  }).catch(()=>{
-    status.innerText = "Autoplay blocked";
-  });
-
+function setVolume(v){
+  audio.volume = v;
 }
 
-/* ---------------- AUTO NEXT ---------------- */
+/* ---------------- PLAY ---------------- */
 
-player.on("ended", () => {
+function playTrack(i){
+
+  currentTrack = i;
+  audio.src = tracks[i].file;
+
+  audio.muted = true;
+
+  audio.play().then(() => {
+
+    setTimeout(() => {
+      audio.muted = false;
+      setVolume(tracks[i].volume);
+    }, 120);
+
+  });
+
+  renderPlaylist();
+}
+
+/* ---------------- AUTO FLOW ---------------- */
+
+audio.addEventListener("ended", () => {
 
   if(currentTrack === 0){
     playTrack(1);
-  } else {
-    status.innerText = "Playback complete";
   }
 
+});
+
+/* ---------------- SCROLL CONTROL ---------------- */
+
+playlist.addEventListener("wheel", (e) => {
+
+  if(e.deltaY > 0){
+    currentTrack = Math.min(currentTrack + 1, tracks.length - 1);
+  } else {
+    currentTrack = Math.max(currentTrack - 1, 0);
+  }
+
+  renderPlaylist();
 });
 
 /* ---------------- INIT ---------------- */
 
 window.addEventListener("load", () => {
   playTrack(0);
-  status.innerText = "Ready";
 });
 
 </script>
