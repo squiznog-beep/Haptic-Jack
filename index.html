@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.07b</title>
+<title>Haptic Player v0.07c</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -28,13 +28,15 @@ body {
   justify-content: center;
 }
 
+/* TRIAGE TITLE */
 #title {
   color: red;
   font-size: 32px;
   letter-spacing: 4px;
-  margin-bottom: 40px;
+  margin-bottom: 30px;
 }
 
+/* fields */
 .field {
   width: 260px;
   border-bottom: 1px solid #333;
@@ -46,6 +48,13 @@ body {
 .label {
   opacity: 0.7;
   margin-top: 10px;
+}
+
+/* boot message */
+#bootText {
+  margin-top: 30px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 
 /* ---------------- PLAYER ---------------- */
@@ -63,7 +72,8 @@ body {
 .track {
   text-align: center;
   padding: 6px;
-  opacity: 0.2;
+  opacity: 0.3;
+  cursor: pointer;
   transition: 0.2s;
 }
 
@@ -71,6 +81,26 @@ body {
   opacity: 1;
   font-weight: bold;
   transform: scale(1.3);
+}
+
+/* ---------------- LOGO ---------------- */
+
+#logo {
+  position: fixed;
+  bottom: 10px;
+  left: 12px;
+  font-size: 14px;
+  opacity: 0.7;
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.triangleA {
+  width: 12px;
+  height: 12px;
+  background: red;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
 }
 
 /* ---------------- VERSION ---------------- */
@@ -82,28 +112,6 @@ body {
   font-size: 11px;
   opacity: 0.5;
 }
-
-/* ---------------- TRIAGE LOGO ---------------- */
-
-#logo {
-  position: fixed;
-  bottom: 10px;
-  left: 12px;
-  font-size: 14px;
-  opacity: 0.7;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-/* triangle "A" */
-.triangleA {
-  width: 12px;
-  height: 12px;
-  background: red;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  display: inline-block;
-}
 </style>
 </head>
 
@@ -111,13 +119,15 @@ body {
 
 <!-- BOOT -->
 <div id="boot">
-  <div id="title">TRIAGE</div>
+  <div id="title">TRI✦GE</div>
 
   <div class="label">Username</div>
   <div class="field" id="userField"></div>
 
   <div class="label">Password</div>
   <div class="field" id="passField"></div>
+
+  <div id="bootText">INITIALIZING...</div>
 </div>
 
 <!-- PLAYER -->
@@ -134,7 +144,7 @@ body {
 <!-- VERSION -->
 <div id="version">
 Last Functional Build: 0.07b<br>
-Current Build: 0.07b
+Current Build: 0.07c
 </div>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
@@ -145,7 +155,12 @@ Current Build: 0.07b
 
 const tracks = [
   { title: "Intro: Welcome (Back)", file: "Notes5.oga", type: "audio/ogg" },
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes.mp3", type: "audio/mp3" }
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes.mp3", type: "audio/mp3" },
+  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg" },
+  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg" },
+  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg" },
+  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg" },
+  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg" }
 ];
 
 const audio = document.getElementById("player");
@@ -153,10 +168,28 @@ const player = new Plyr(audio);
 
 let currentTrack = 0;
 
-/* ---------------- AUDIO SYNC FIX ---------------- */
+/* ---------------- PLAYLIST ---------------- */
+
+const playlistEl = document.getElementById("playlist");
+
+function renderPlaylist() {
+  playlistEl.innerHTML = "";
+
+  tracks.forEach((t, i) => {
+    const el = document.createElement("div");
+    el.className = "track";
+    el.innerText = t.title;
+
+    if (i === currentTrack) el.classList.add("active");
+
+    el.onclick = () => playTrack(i);
+    playlistEl.appendChild(el);
+  });
+}
+
+/* ---------------- TRACK PLAY ---------------- */
 
 function playTrack(i) {
-
   currentTrack = i;
 
   player.source = {
@@ -167,26 +200,30 @@ function playTrack(i) {
     }]
   };
 
-  // HARD SYNC: wait for metadata before play
-  audio.onloadedmetadata = () => {
-    player.play().catch(()=>{});
-  };
+  renderPlaylist();
+
+  player.play().catch(()=>{});
 }
 
-/* ---------------- BOOT SEQUENCE (SYNC FIXED) ---------------- */
+/* ---------------- AUTO NEXT ---------------- */
 
-function typeUser(el, text, cb) {
+player.on("ended", () => {
+  if (currentTrack + 1 < tracks.length) {
+    playTrack(currentTrack + 1);
+  }
+});
 
+/* ---------------- BOOT SEQUENCE ---------------- */
+
+function typeText(el, text, speed, cb) {
   let i = 0;
-
   const t = setInterval(() => {
-    el.innerText = text.slice(0, i);
-    i++;
+    el.innerText = text.slice(0, i++);
     if (i > text.length) {
       clearInterval(t);
       cb?.();
     }
-  }, 40);
+  }, speed);
 }
 
 async function typePassword(el, text, cb) {
@@ -210,15 +247,20 @@ function boot() {
 
   const u = document.getElementById("userField");
   const p = document.getElementById("passField");
+  const bootText = document.getElementById("bootText");
 
-  typeUser(u, "SusanSurandin", () => {
+  typeText(u, "SusanSurandin", 40, () => {
 
-    typePassword(p, "WitnessMe", () => {
+    typePassword(p, "WitnessMe", async () => {
 
-      // 🟢 PERFECT SYNC POINT
+      // RESTORED MISSING STEP
+      bootText.style.opacity = 1;
+      bootText.innerText = "WELCOME BACK SUSAN";
+
+      await new Promise(r => setTimeout(r, 1200));
+
       document.getElementById("boot").style.display = "none";
 
-      player.play().catch(()=>{});
       playTrack(0);
 
     });
@@ -229,6 +271,8 @@ function boot() {
 /* ---------------- INIT ---------------- */
 
 window.addEventListener("click", boot, { once: true });
+
+window.addEventListener("load", renderPlaylist);
 
 </script>
 
