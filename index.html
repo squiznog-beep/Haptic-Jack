@@ -65,20 +65,41 @@ body {
   margin-top: 30px;
   font-size: 18px;
   opacity: 0;
-  transition: opacity 0.5s ease;
+  transition: 0.5s;
 }
 
-/* ---------------- PLAYER ---------------- */
+/* ---------------- OUTER LAYOUT ---------------- */
 
 .wrapper {
-  max-width: 520px;
+  width: min(900px, calc(100vw - 40px));
   margin: auto;
   padding: 20px;
   margin-top: 60px;
   background: rgba(255,255,255,0.05);
   border-radius: 16px;
   backdrop-filter: blur(20px);
+  box-sizing: border-box;
 }
+
+/* ---------------- PLYR FIX ---------------- */
+
+.plyr {
+  width: 100%;
+}
+
+.plyr__controls {
+  flex-wrap: nowrap !important;
+  min-width: 100% !important;
+}
+
+.plyr__volume {
+  min-width: 110px !important;
+  display: flex !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* ---------------- PLAYLIST ---------------- */
 
 #playlist {
   margin-top: 20px;
@@ -105,6 +126,8 @@ body {
   opacity: 0.15;
   transform: scale(0.85);
 }
+
+/* ---------------- LOGO ---------------- */
 
 #logo {
   position: fixed;
@@ -182,8 +205,6 @@ const loginSfx = document.getElementById("loginSfx");
 
 let currentTrack = 0;
 
-/* ---------------- PLYR ---------------- */
-
 const player = new Plyr(audio, {
   controls: ['play', 'progress', 'current-time', 'mute', 'volume']
 });
@@ -200,7 +221,7 @@ function renderPlaylist() {
     if (Math.abs(distance) > 2) continue;
 
     const el = document.createElement("div");
-    el.classList.add("track");
+    el.className = "track";
     el.innerText = tracks[i].title;
 
     if (distance === 0) el.classList.add("active");
@@ -210,13 +231,6 @@ function renderPlaylist() {
     el.onclick = () => playTrack(i);
     playlistEl.appendChild(el);
   }
-}
-
-/* ---------------- FIX: SINGLE SOURCE OF TRUTH VOLUME ---------------- */
-
-function setVolumeOnce(i) {
-  // only set volume after player is fully ready
-  player.volume = tracks[i].volume;
 }
 
 /* ---------------- PLAY TRACK ---------------- */
@@ -235,8 +249,9 @@ function playTrack(i) {
 
   renderPlaylist();
 
-  // CRITICAL FIX: only ONE lifecycle hook (prevents UI collapse)
-  player.once('ready', () => setVolumeOnce(i));
+  player.once('ready', () => {
+    player.volume = tracks[i].volume;
+  });
 
   player.play().catch(() => {});
 }
@@ -252,24 +267,18 @@ player.on("ended", () => {
 /* ---------------- BOOT ---------------- */
 
 function typeUser(el, text, cb) {
-
   let i = 0;
-
   function step() {
     if (i <= text.length) {
-      el.innerText = text.slice(0, i);
-      i++;
+      el.innerText = text.slice(0, i++);
       setTimeout(step, 40);
     } else cb();
   }
-
   step();
 }
 
 async function typePassword(el, text) {
-
   let masked = "";
-
   for (let i = 0; i < text.length; i++) {
     el.innerText = masked + text[i];
     await new Promise(r => setTimeout(r, 100));
@@ -284,16 +293,7 @@ function startBoot() {
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const source = ctx.createMediaElementSource(loginSfx);
-  const gain = ctx.createGain();
-  gain.gain.value = 1.1;
-  source.connect(gain);
-  gain.connect(ctx.destination);
-
-  setTimeout(() => {
-    loginSfx.play().catch(() => {});
-  }, 800);
+  setTimeout(() => loginSfx.play().catch(() => {}), 800);
 
   typeUser(u, "SusanSurandin", () => {
 
