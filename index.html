@@ -42,24 +42,29 @@ vol.addEventListener("input", e => {
   setVolume(e.target.value);
 });
 
-/* ---------------- LOAD TRACK ---------------- */
+/* ---------------- LOAD ---------------- */
 
 function loadTrack(index){
   currentTrack = index;
   audio.src = tracks[index];
 }
 
-/* ---------------- SAFE PLAY FUNCTION ---------------- */
+/* ---------------- SAFE PLAY ---------------- */
 
 function safePlay(volumePercent){
 
   audio.muted = true;
 
   audio.play().then(() => {
-    audio.muted = false;
-    setVolume(volumePercent);
+
+    // Let playback stabilize first
+    setTimeout(() => {
+      audio.muted = false;
+      setVolume(volumePercent);
+    }, 150);
+
   }).catch(() => {
-    status.innerText = "Playback blocked";
+    status.innerText = "Autoplay blocked";
   });
 
 }
@@ -69,11 +74,9 @@ function safePlay(volumePercent){
 audio.addEventListener("ended", () => {
 
   if(currentTrack === 0){
-    // Intro finished → go to Prologue
     loadTrack(1);
-    safePlay(10); // play prologue at 10%
-  }
-  else{
+    safePlay(10);
+  } else {
     status.innerText = "Playback finished";
   }
 
@@ -84,7 +87,7 @@ audio.addEventListener("ended", () => {
 window.addEventListener("load", () => {
 
   loadTrack(0);
-  safePlay(70); // intro at 70%
+  safePlay(70);
 
 });
 
