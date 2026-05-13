@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.05</title>
+<title>Haptic Player v0.06</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -14,6 +14,8 @@ body {
   font-family: system-ui, sans-serif;
   color: white;
 }
+
+/* ---------------- WRAPPER ---------------- */
 
 .wrapper {
   max-width: 520px;
@@ -34,29 +36,41 @@ body {
 .track {
   cursor: pointer;
   text-align: center;
-  transition: all 0.35s ease;
+  transition: all 0.25s ease;
   padding: 6px 0;
-}
-
-.track.far {
-  opacity: 0.1;
+  opacity: 0.2;
   transform: scale(0.75);
 }
 
-.track.near {
-  opacity: 0.5;
-  transform: scale(0.9);
-}
+/* distance states */
+.track.near { opacity: 0.5; transform: scale(0.9); }
+.track.adjacent { opacity: 0.8; transform: scale(1.05); }
 
-.track.adjacent {
-  opacity: 0.8;
-  transform: scale(1.05);
-}
-
+/* ACTIVE BASE */
 .track.active {
   opacity: 1;
   transform: scale(1.35);
   font-weight: 700;
+  transition: transform 0.1s ease, opacity 0.1s ease;
+}
+
+/* AUDIO REACTIVE GLOW */
+.track.glow {
+  text-shadow: 0 0 6px rgba(255,255,255,0.25);
+}
+
+/* ---------------- GLOW INTENSITY ---------------- */
+
+.track.glow.low {
+  text-shadow: 0 0 4px rgba(255,255,255,0.15);
+}
+
+.track.glow.mid {
+  text-shadow: 0 0 10px rgba(255,255,255,0.35);
+}
+
+.track.glow.high {
+  text-shadow: 0 0 18px rgba(255,255,255,0.55);
 }
 
 /* ---------------- VERSION ---------------- */
@@ -70,7 +84,7 @@ body {
   text-align: right;
 }
 
-/* ---------------- AUTOPLAY OVERLAY ---------------- */
+/* ---------------- START OVERLAY ---------------- */
 
 #startLayer {
   position: fixed;
@@ -78,7 +92,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0,0,0,0.6);
+  background: rgba(0,0,0,0.65);
   font-size: 18px;
   cursor: pointer;
   z-index: 999;
@@ -88,7 +102,7 @@ body {
 
 <body>
 
-<div id="startLayer">Tap / Click to Start Audio</div>
+<div id="startLayer">Click / Tap to Enter</div>
 
 <div class="wrapper">
 
@@ -99,8 +113,8 @@ body {
 </div>
 
 <div id="version">
-Last Functional Build: 0.04<br>
-Current Build: 0.05
+Last Functional Build: 0.05<br>
+Current Build: 0.06
 </div>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
@@ -126,22 +140,32 @@ const startLayer = document.getElementById("startLayer");
 
 let currentTrack = 0;
 
+/* ---------------- AUDIO PRELOAD SYSTEM ---------------- */
+
+const preload = tracks.map(t => {
+  const a = new Audio();
+  a.src = t.file;
+  a.preload = "auto";
+  return a;
+});
+
 /* ---------------- PLYR ---------------- */
 
 const player = new Plyr(audio, {
   controls: ['play', 'progress', 'current-time', 'mute', 'volume']
 });
 
-/* ---------------- GESTURE-BASED START ---------------- */
+/* ---------------- GESTURE START ---------------- */
 
 function startSystem(){
   startLayer.style.display = "none";
   playTrack(0);
 }
 
-/* ---------------- PLAYLIST WINDOW (5 ITEMS ONLY) ---------------- */
+/* ---------------- PLAYLIST WINDOW ---------------- */
 
 function renderPlaylist() {
+
   playlistEl.innerHTML = "";
 
   const start = Math.max(0, currentTrack - 2);
@@ -157,12 +181,45 @@ function renderPlaylist() {
 
     if (i === currentTrack) el.classList.add("active");
     else if (d === 1) el.classList.add("adjacent");
-    else if (d === 2) el.classList.add("near");
+    else el.classList.add("near");
 
     el.onclick = () => playTrack(i);
 
     playlistEl.appendChild(el);
   }
+}
+
+/* ---------------- AUDIO REACTIVE VISUALS ---------------- */
+
+const ctx = new (window.AudioContext || window.webkitAudioContext)();
+const source = ctx.createMediaElementSource(audio);
+const analyser = ctx.createAnalyser();
+
+source.connect(analyser);
+analyser.connect(ctx.destination);
+
+analyser.fftSize = 64;
+const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+function updateGlow() {
+
+  analyser.getByteFrequencyData(dataArray);
+
+  let sum = 0;
+  for (let i = 0; i < dataArray.length; i++) sum += dataArray[i];
+
+  const avg = sum / dataArray.length;
+
+  const active = document.querySelector(".track.active");
+  if (!active) return;
+
+  active.classList.remove("low", "mid", "high");
+
+  if (avg < 40) active.classList.add("low");
+  else if (avg < 90) active.classList.add("mid");
+  else active.classList.add("high");
+
+  requestAnimationFrame(updateGlow);
 }
 
 /* ---------------- PLAY TRACK ---------------- */
@@ -183,6 +240,7 @@ function playTrack(i) {
 
   const attempt = player.play();
   if (attempt) attempt.catch(() => {});
+
 }
 
 /* ---------------- AUTO FLOW ---------------- */
@@ -195,7 +253,13 @@ player.on("ended", () => {
 
 /* ---------------- INIT ---------------- */
 
-startLayer.addEventListener("click", startSystem);
+startLayer.addEventListener("click", async () => {
+
+  await ctx.resume();
+  startSystem();
+  updateGlow();
+
+});
 
 window.addEventListener("load", () => {
   renderPlaylist();
