@@ -2,88 +2,173 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Audio Player</title>
+<title>Haptic Player</title>
+
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
+
+<style>
+body {
+  margin: 0;
+  padding: 40px;
+  background: radial-gradient(circle at top, #1a1a1a, #0c0c0c);
+  font-family: system-ui, sans-serif;
+  color: white;
+}
+
+.wrapper {
+  max-width: 500px;
+  margin: auto;
+  backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.05);
+  padding: 20px;
+  border-radius: 16px;
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+#playlist {
+  margin-top: 20px;
+}
+
+.track {
+  cursor: pointer;
+  opacity: 0.7;
+  padding: 5px 0;
+}
+
+.track:hover {
+  opacity: 1;
+}
+
+.track.active {
+  font-weight: bold;
+  opacity: 1;
+}
+
+#status {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-top: 10px;
+}
+
+#version {
+  position: fixed;
+  bottom: 8px;
+  right: 12px;
+  font-size: 11px;
+  opacity: 0.4;
+}
+</style>
 </head>
 
-<body style="background:#111;color:white;font-family:sans-serif;padding:20px;">
+<body>
 
-<h3>Audio Player</h3>
+<div class="wrapper">
 
-<audio id="audio" controls autoplay muted></audio>
+<audio id="player" playsinline></audio>
 
-<br><br>
+<div id="playlist"></div>
 
-<label>Volume</label>
-<input id="vol" type="range" min="0" max="100" step="1" value="10">
+<div id="status">Initializing...</div>
 
-<p id="status">Ready</p>
+</div>
+
+<div id="version">v0.01</div>
+
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
 
-const audio = document.getElementById("audio");
-const vol = document.getElementById("vol");
-const status = document.getElementById("status");
-
 const tracks = [
-  "Notes5.oga",
-  "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3"
+  { title: "Welcome (Back)", file: "Notes5.oga", volume: 0.70 },
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.10 }
 ];
+
+const audio = document.getElementById("player");
+const playlistEl = document.getElementById("playlist");
+const status = document.getElementById("status");
 
 let currentTrack = 0;
 
-/* ---------------- VOLUME ---------------- */
-
-function setVolume(percent){
-  audio.volume = percent / 100;
-  vol.value = percent;
-}
-
-vol.addEventListener("input", e => {
-  setVolume(e.target.value);
+const player = new Plyr(audio, {
+  controls: [
+    'play',
+    'progress',
+    'current-time',
+    'mute',
+    'volume'
+  ]
 });
 
-/* ---------------- LOAD TRACK ---------------- */
+/* ---------------- PLAYLIST BUILD ---------------- */
 
-function loadTrack(index, volumePercent){
+tracks.forEach((track, index) => {
+
+  const div = document.createElement("div");
+  div.className = "track";
+  div.innerText = track.title;
+
+  div.onclick = () => {
+    playTrack(index);
+  };
+
+  playlistEl.appendChild(div);
+});
+
+/* ---------------- UI UPDATE ---------------- */
+
+function updateActive(){
+  document.querySelectorAll(".track").forEach((el, i)=>{
+    el.classList.toggle("active", i === currentTrack);
+  });
+}
+
+/* ---------------- PLAY TRACK ---------------- */
+
+function playTrack(index){
 
   currentTrack = index;
-  audio.src = tracks[index];
 
-  audio.addEventListener("loadedmetadata", function initTrack(){
+  player.source = {
+    type: 'audio',
+    sources: [
+      {
+        src: tracks[index].file,
+        type: tracks[index].file.endsWith(".oga") ? "audio/ogg" : "audio/mp3"
+      }
+    ]
+  };
 
-    audio.removeEventListener("loadedmetadata", initTrack);
+  updateActive();
 
-    setVolume(volumePercent);
-    audio.muted = false;
+  player.muted = true;
 
+  player.play().then(()=>{
+    player.volume = tracks[index].volume;
+    player.muted = false;
+  }).catch(()=>{
+    status.innerText = "Autoplay blocked";
   });
 
 }
 
 /* ---------------- AUTO NEXT ---------------- */
 
-audio.addEventListener("ended", () => {
+player.on("ended", () => {
 
   if(currentTrack === 0){
-    loadTrack(1, 10);
-    audio.play();
+    playTrack(1);
   } else {
-    status.innerText = "Playback finished";
+    status.innerText = "Playback complete";
   }
-
-});
-
-/* ---------------- START INTRO ---------------- */
-
-window.addEventListener("load", () => {
-
-  loadTrack(0, 70);
 
 });
 
 /* ---------------- INIT ---------------- */
 
-setVolume(10);
+window.addEventListener("load", () => {
+  playTrack(0);
+  status.innerText = "Ready";
+});
 
 </script>
 
