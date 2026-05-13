@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.07g</title>
+<title>Haptic Player v0.07h</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -13,17 +13,6 @@ body {
   font-family: monospace;
   color: white;
   overflow: hidden;
-}
-
-/* ---------------- MODE SWITCH ---------------- */
-body.login #logo,
-body.login #title {
-  letter-spacing: 7px; /* MORE spacing on login */
-}
-
-body.player #logo,
-body.player #title {
-  letter-spacing: 5px; /* LESS spacing on player */
 }
 
 /* ---------------- BOOT ---------------- */
@@ -39,29 +28,79 @@ body.player #title {
   justify-content: center;
 }
 
-/* TITLE */
+/* ============================= */
+/* FIXED TRIAGE LOGO (CONSISTENT) */
+/* ============================= */
+
 #title {
   color: red;
   font-size: 32px;
+  letter-spacing: 4px; /* FIX: prevents squish */
   margin-bottom: 30px;
   display: flex;
   align-items: center;
+  line-height: 1;
 }
 
-/* TRIANGLE FIXED ALIGNMENT */
+/* triangle matches font height EXACTLY */
 .triangle {
-  width: 0.9em;
-  height: 0.9em;
+  width: 0.85em;
+  height: 0.85em;
   background: red;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   display: inline-block;
-
-  /* FIX HEIGHT ALIGNMENT */
-  transform: translateY(-0.08em);
   margin: 0 6px;
+  transform: translateY(0.05em);
 }
 
-/* PLAYER LOGO */
+/* ---------------- FIELDS ---------------- */
+
+.field {
+  width: 260px;
+  border-bottom: 1px solid #333;
+  padding: 6px;
+  font-size: 14px;
+  min-height: 20px;
+}
+
+.label {
+  opacity: 0.7;
+  margin-top: 10px;
+}
+
+/* ---------------- PLAYER ---------------- */
+
+.wrapper {
+  max-width: 520px;
+  margin: auto;
+  margin-top: 60px;
+  padding: 20px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+}
+
+/* ---------------- PLAYLIST WINDOW ---------------- */
+
+#playlist {
+  margin-top: 20px;
+  text-align: center;
+}
+
+.track {
+  opacity: 0.25;
+  transform: scale(0.85);
+  transition: 0.2s;
+  padding: 4px;
+}
+
+.track.active {
+  opacity: 1;
+  font-weight: bold;
+  transform: scale(1.35);
+}
+
+/* ---------------- LOGO ---------------- */
+
 #logo {
   position: fixed;
   bottom: 10px;
@@ -84,7 +123,7 @@ body.player #title {
 </style>
 </head>
 
-<body class="login">
+<body>
 
 <!-- BOOT -->
 <div id="boot">
@@ -98,7 +137,7 @@ body.player #title {
   <div class="label">Password</div>
   <div class="field" id="passField"></div>
 
-  <div id="bootText"></div>
+  <div id="bootText">INITIALIZING...</div>
 </div>
 
 <!-- PLAYER -->
@@ -113,22 +152,19 @@ body.player #title {
 </div>
 
 <div id="version">
-Last Functional Build: 0.07b<br>
-Current Build: 0.07g
+Last Functional Build: 0.07f<br>
+Current Build: 0.07h
 </div>
 
 <script>
 
 const tracks = [
   { title: "Intro: Welcome (Back)", file: "Notes5.oga", type: "audio/ogg" },
-
-  // FIXED: RAW filename (NOT encoded URL)
   {
     title: "Prologue",
     file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3",
     type: "audio/mp3"
   },
-
   { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg" },
   { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg" },
   { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg" },
@@ -140,15 +176,21 @@ const audio = document.getElementById("player");
 
 let currentTrack = 0;
 
-/* ---------------- PLAY TRACK ---------------- */
+/* ---------------- CLEAN PLAYBACK PIPELINE (FIX PROLOGUE) ---------------- */
 
 function playTrack(i) {
   currentTrack = i;
 
   audio.pause();
-  audio.src = tracks[i].file;
+  audio.removeAttribute("src");
   audio.load();
-  audio.play().catch(()=>{});
+
+  audio.src = tracks[i].file;
+
+  const playPromise = audio.play();
+  if (playPromise !== undefined) {
+    playPromise.catch(() => {});
+  }
 
   renderPlaylist();
 }
@@ -165,38 +207,41 @@ function renderPlaylist() {
 
   for (let i = start; i <= end; i++) {
     const el = document.createElement("div");
+    el.className = "track";
+
+    if (i === currentTrack) el.classList.add("active");
+
     el.innerText = tracks[i].title;
-
-    if (i === currentTrack) el.style.fontWeight = "bold";
-
     el.onclick = () => playTrack(i);
 
     playlistEl.appendChild(el);
   }
 }
 
-/* ---------------- BOOT ---------------- */
+/* ---------------- BOOT (FIXED 1500ms TIMING) ---------------- */
 
 function boot() {
 
   const start = performance.now();
 
-  document.body.classList.remove("login");
-  document.body.classList.add("player");
+  const u = document.getElementById("userField");
+  const p = document.getElementById("passField");
+
+  u.innerText = "SusanSurandin";
+
+  let pw = "WitnessMe";
+  let masked = "*".repeat(pw.length);
+  p.innerText = masked;
 
   const delay = Math.max(0, 1500 - (performance.now() - start));
 
   setTimeout(() => {
+    document.getElementById("boot").style.display = "none";
     playTrack(0);
   }, delay);
-
-  setTimeout(() => {
-    document.getElementById("boot").style.display = "none";
-  }, delay + 1000);
 }
 
 window.addEventListener("click", boot, { once: true });
-
 window.addEventListener("load", renderPlaylist);
 
 </script>
