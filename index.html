@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.09d</title>
+<title>Haptic Player v0.09c</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -13,26 +13,6 @@ body {
   font-family: monospace;
   color: white;
   overflow: hidden;
-}
-
-/* ---------------- OUTER LAYOUT ---------------- */
-
-#stage {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  gap: 20px;
-}
-
-/* ---------------- PLAYER WINDOW ---------------- */
-
-.wrapper {
-  width: 520px;
-  padding: 16px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
 }
 
 /* ---------------- BOOT ---------------- */
@@ -81,30 +61,50 @@ body {
   margin-bottom: 15px;
 }
 
-/* ---------------- PLAYLIST ---------------- */
+#bootText {
+  margin-top: 30px;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* ---------------- PLAYER ---------------- */
+
+.wrapper {
+  max-width: 520px;
+  margin: auto;
+  padding: 20px;
+  margin-top: 60px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+}
 
 #playlist {
-  margin-top: 15px;
+  margin-top: 20px;
   text-align: center;
 }
 
 .track {
   padding: 6px;
   transition: all 0.25s ease;
-  opacity: 0.3;
 }
 
 .track.active {
   font-weight: bold;
   opacity: 1;
-  transform: scale(1.25);
+  transform: scale(1.3);
 }
 
 .track.near {
-  opacity: 0.6;
+  opacity: 0.5;
+  transform: scale(1);
 }
 
-/* ---------------- LOGO + VERSION ---------------- */
+.track.far {
+  opacity: 0.15;
+  transform: scale(0.85);
+}
 
 #logo {
   position: fixed;
@@ -124,23 +124,6 @@ body {
   font-size: 11px;
   opacity: 0.5;
 }
-
-/* ---------------- VOLUME LOCK ---------------- */
-
-#volumeLock {
-  margin-top: 10px;
-  font-size: 12px;
-  padding: 6px 10px;
-  background: rgba(255,0,0,0.15);
-  border: 1px solid rgba(255,0,0,0.4);
-  color: white;
-  cursor: pointer;
-  border-radius: 6px;
-}
-
-#volumeLock.locked {
-  background: rgba(255,0,0,0.45);
-}
 </style>
 </head>
 
@@ -157,19 +140,14 @@ body {
 
   <div class="label">Password</div>
   <div class="field" id="passField"></div>
+
+  <div id="bootText">INITIALIZING...</div>
 </div>
 
-<!-- MAIN STAGE -->
-<div id="stage">
-
-  <div class="wrapper">
-    <audio id="player" playsinline></audio>
-
-    <button id="volumeLock">Volume: UNLOCKED</button>
-
-    <div id="playlist"></div>
-  </div>
-
+<!-- PLAYER -->
+<div class="wrapper">
+  <audio id="player" playsinline></audio>
+  <div id="playlist"></div>
 </div>
 
 <div id="logo">
@@ -177,9 +155,11 @@ body {
 </div>
 
 <div id="version">
-Last Functional Build: 0.09c<br>
-Current Build: 0.09d
+Last Functional Build: 0.09b<br>
+Current Build: 0.09c
 </div>
+
+<audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
@@ -188,123 +168,151 @@ Current Build: 0.09d
 /* ---------------- TRACKS ---------------- */
 
 const tracks = [
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" },
-  { title: "Announcement 1", file: "Announcement1.oga" },
-  { title: "Announcement 2", file: "Announcement2.oga" },
-  { title: "Announcement 3", file: "Announcement3.oga" },
-  { title: "Announcement 4", file: "Announcement4.oga" },
-  { title: "Announcement 6", file: "Announcement6.oga" }
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3", volume: 0.1 },
+  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg", volume: 0.6 }
 ];
 
 const audio = document.getElementById("player");
-
-const player = new Plyr(audio, {
-  controls: [
-    'play',
-    'progress',
-    'current-time',
-    'mute',
-    'volume'   // THIS is your real slider
-  ]
-});
+const playlistEl = document.getElementById("playlist");
+const loginSfx = document.getElementById("loginSfx");
 
 let currentTrack = 0;
 
-/* ---------------- VOLUME SYSTEM ---------------- */
+/* ---------------- PLYR (RESTORED CONTROLS) ---------------- */
 
-let volumeLocked = false;
+const player = new Plyr(audio, {
+  controls: ['play', 'progress', 'current-time', 'mute', 'volume']
+});
 
-/* lock prevents slider changes */
-function enforceLock() {
-  if (!volumeLocked) return;
-  player.volume = player.volume;
+/* ---------------- PLAYLIST ---------------- */
+
+function renderPlaylist() {
+
+  playlistEl.innerHTML = "";
+
+  for (let i = 0; i < tracks.length; i++) {
+
+    const distance = i - currentTrack;
+    if (Math.abs(distance) > 2) continue;
+
+    const el = document.createElement("div");
+    el.classList.add("track");
+    el.innerText = tracks[i].title;
+
+    if (distance === 0) el.classList.add("active");
+    else if (Math.abs(distance) === 1) el.classList.add("near");
+    else el.classList.add("far");
+
+    el.onclick = () => playTrack(i);
+    playlistEl.appendChild(el);
+  }
 }
 
-/* ---------------- LOCK BUTTON ---------------- */
+/* ---------------- FIXED VOLUME SYSTEM ---------------- */
 
-const lockBtn = document.getElementById("volumeLock");
-
-lockBtn.addEventListener("click", () => {
-  volumeLocked = !volumeLocked;
-
-  lockBtn.textContent = volumeLocked
-    ? "Volume: LOCKED"
-    : "Volume: UNLOCKED";
-
-  lockBtn.classList.toggle("locked", volumeLocked);
-});
+function applyVolume(i) {
+  requestAnimationFrame(() => {
+    player.volume = tracks[i].volume;
+  });
+}
 
 /* ---------------- PLAY TRACK ---------------- */
 
 function playTrack(i) {
+
   currentTrack = i;
 
   player.source = {
     type: 'audio',
     sources: [{
       src: tracks[i].file,
-      type: 'audio/mp3'
+      type: tracks[i].type
     }]
   };
 
   renderPlaylist();
 
+  player.once('ready', () => applyVolume(i));
+  player.once('loadedmetadata', () => applyVolume(i));
+  player.once('playing', () => applyVolume(i));
+
   player.play().catch(()=>{});
 }
 
-/* ---------------- PLAYLIST (5 WINDOW) ---------------- */
+player.on("ended", () => {
+  if (currentTrack + 1 < tracks.length) {
+    playTrack(currentTrack + 1);
+  }
+});
 
-function renderPlaylist() {
-  const el = document.getElementById("playlist");
-  el.innerHTML = "";
+/* ---------------- PASSWORD ---------------- */
 
-  const start = Math.max(0, currentTrack - 2);
-  const end = Math.min(tracks.length - 1, currentTrack + 2);
+async function typePassword(el, text) {
 
-  for (let i = start; i <= end; i++) {
+  let masked = "";
 
-    const div = document.createElement("div");
-    div.className = "track";
-
-    if (i === currentTrack) div.classList.add("active");
-    else div.classList.add("near");
-
-    div.textContent = tracks[i].title;
-    div.onclick = () => playTrack(i);
-
-    el.appendChild(div);
+  for (let i = 0; i < text.length; i++) {
+    el.innerText = masked + text[i];
+    await new Promise(r => setTimeout(r, 100));
+    masked += "*";
+    el.innerText = masked;
   }
 }
 
-/* ---------------- BOOT (simplified stable) ---------------- */
+function typeUser(el, text, cb) {
 
-function type(el, text, speed, cb) {
   let i = 0;
-  const t = setInterval(() => {
-    el.textContent = text.slice(0, i++);
-    if (i > text.length) {
-      clearInterval(t);
-      cb?.();
-    }
-  }, speed);
+
+  function step() {
+    if (i <= text.length) {
+      el.innerText = text.slice(0, i);
+      i++;
+      setTimeout(step, 40);
+    } else cb();
+  }
+
+  step();
 }
+
+/* ---------------- BOOT ---------------- */
 
 function startBoot() {
 
   const u = document.getElementById("userField");
   const p = document.getElementById("passField");
+  const bootText = document.getElementById("bootText");
 
-  type(u, "SusanSurandin", 40, () => {
-    type(p, "WitnessMe", 60, () => {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const source = ctx.createMediaElementSource(loginSfx);
+  const gain = ctx.createGain();
+  gain.gain.value = 1.1;
+  source.connect(gain);
+  gain.connect(ctx.destination);
 
-      document.getElementById("boot").style.display = "none";
-      playTrack(0);
+  setTimeout(() => {
+    loginSfx.play().catch(()=>{});
+  }, 800);
+
+  typeUser(u, "SusanSurandin", () => {
+
+    typePassword(p, "WitnessMe").then(() => {
+
+      bootText.style.opacity = 1;
+      bootText.innerText = "WELCOME BACK SUSAN";
+
+      setTimeout(() => {
+        document.getElementById("boot").style.display = "none";
+        playTrack(0);
+      }, 1500);
 
     });
+
   });
 }
-
-/* ---------------- INIT ---------------- */
 
 window.addEventListener("click", startBoot, { once: true });
 window.addEventListener("load", renderPlaylist);
