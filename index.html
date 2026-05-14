@@ -1,323 +1,51 @@
-<!doctype html>
-<html>
-<head>
-<meta charset="utf-8">
-<title>Haptic Player v0.09c</title>
+audio.addEventListener('ended', () => {
 
-<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
+  // ---------------- INTRO FINISHED ----------------
+  if (currentTrack === 0) {
+    introDone = true;
 
-<style>
-body {
-  margin: 0;
-  background: black;
-  font-family: monospace;
-  color: white;
-  overflow: hidden;
-}
+    const savedTrack = parseInt(localStorage.getItem("lastTrack"));
+    const savedTime = parseFloat(localStorage.getItem("lastTime"));
+    const lastSession = parseInt(localStorage.getItem("lastSession"));
 
-/* ---------------- BOOT ---------------- */
+    const now = Date.now();
+    const oneHour = 60 * 60 * 1000;
 
-#boot {
-  position: fixed;
-  inset: 0;
-  background: black;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+    audio.volume = 0.10; // reset AFTER intro
 
-#title {
-  font-size: 32px;
-  color: red;
-  letter-spacing: 4px;
-  margin-bottom: 40px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
+    let shouldResume =
+      !isNaN(savedTrack) &&
+      savedTrack > 0 &&
+      lastSession &&
+      now - lastSession <= oneHour;
 
-.triangle {
-  width: 0.9em;
-  height: 0.9em;
-  background: red;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  position: relative;
-  top: 2px;
-}
+    if (shouldResume) {
+      statusText.classList.add("show");
 
-.label {
-  opacity: 0.7;
-  margin-bottom: 4px;
-}
-
-.field {
-  width: 260px;
-  border-bottom: 1px solid #333;
-  padding: 6px;
-  font-size: 14px;
-  min-height: 20px;
-  margin-bottom: 15px;
-}
-
-#bootText {
-  margin-top: 30px;
-  font-size: 18px;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-
-/* ---------------- PLAYER ---------------- */
-
-.wrapper {
-  max-width: 520px;
-  margin: auto;
-  padding: 20px;
-  margin-top: 60px;
-  background: rgba(255,255,255,0.05);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
-}
-
-#playlist {
-  margin-top: 20px;
-  text-align: center;
-}
-
-.track {
-  padding: 6px;
-  transition: all 0.25s ease;
-}
-
-.track.active {
-  font-weight: bold;
-  opacity: 1;
-  transform: scale(1.3);
-}
-
-.track.near {
-  opacity: 0.5;
-  transform: scale(1);
-}
-
-.track.far {
-  opacity: 0.15;
-  transform: scale(0.85);
-}
-
-#logo {
-  position: fixed;
-  bottom: 10px;
-  left: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  opacity: 0.7;
-  color: red;
-}
-
-#version {
-  position: fixed;
-  bottom: 10px;
-  right: 12px;
-  font-size: 11px;
-  opacity: 0.5;
-}
-</style>
-</head>
-
-<body>
-
-<!-- BOOT -->
-<div id="boot">
-  <div id="title">
-    T R I <div class="triangle"></div> G E
-  </div>
-
-  <div class="label">Username</div>
-  <div class="field" id="userField"></div>
-
-  <div class="label">Password</div>
-  <div class="field" id="passField"></div>
-
-  <div id="bootText">INITIALIZING...</div>
-</div>
-
-<!-- PLAYER -->
-<div class="wrapper">
-  <audio id="player" playsinline></audio>
-  <div id="playlist"></div>
-</div>
-
-<div id="logo">
-  T R I <div class="triangle"></div> G E
-</div>
-
-<div id="version">
-Last Functional Build: 0.09b<br>
-Current Build: 0.09c
-</div>
-
-<audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
-
-<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
-
-<script>
-
-/* ---------------- TRACKS ---------------- */
-
-const tracks = [
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3", volume: 0.1 },
-  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg", volume: 0.6 },
-  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg", volume: 0.6 },
-  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg", volume: 0.6 },
-  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg", volume: 0.6 },
-  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg", volume: 0.6 }
-];
-
-const audio = document.getElementById("player");
-const playlistEl = document.getElementById("playlist");
-const loginSfx = document.getElementById("loginSfx");
-
-let currentTrack = 0;
-
-/* ---------------- PLYR (RESTORED CONTROLS) ---------------- */
-
-const player = new Plyr(audio, {
-  controls: ['play', 'progress', 'current-time', 'mute', 'volume']
-});
-
-/* ---------------- PLAYLIST ---------------- */
-
-function renderPlaylist() {
-
-  playlistEl.innerHTML = "";
-
-  for (let i = 0; i < tracks.length; i++) {
-
-    const distance = i - currentTrack;
-    if (Math.abs(distance) > 2) continue;
-
-    const el = document.createElement("div");
-    el.classList.add("track");
-    el.innerText = tracks[i].title;
-
-    if (distance === 0) el.classList.add("active");
-    else if (Math.abs(distance) === 1) el.classList.add("near");
-    else el.classList.add("far");
-
-    el.onclick = () => playTrack(i);
-    playlistEl.appendChild(el);
-  }
-}
-
-/* ---------------- FIXED VOLUME SYSTEM ---------------- */
-
-function applyVolume(i) {
-  requestAnimationFrame(() => {
-    player.volume = tracks[i].volume;
-  });
-}
-
-/* ---------------- PLAY TRACK ---------------- */
-
-function playTrack(i) {
-
-  currentTrack = i;
-
-  player.source = {
-    type: 'audio',
-    sources: [{
-      src: tracks[i].file,
-      type: tracks[i].type
-    }]
-  };
-
-  renderPlaylist();
-
-  player.once('ready', () => applyVolume(i));
-  player.once('loadedmetadata', () => applyVolume(i));
-  player.once('playing', () => applyVolume(i));
-
-  player.play().catch(()=>{});
-}
-
-player.on("ended", () => {
-  if (currentTrack + 1 < tracks.length) {
-    playTrack(currentTrack + 1);
-  }
-});
-
-/* ---------------- PASSWORD ---------------- */
-
-async function typePassword(el, text) {
-
-  let masked = "";
-
-  for (let i = 0; i < text.length; i++) {
-    el.innerText = masked + text[i];
-    await new Promise(r => setTimeout(r, 100));
-    masked += "*";
-    el.innerText = masked;
-  }
-}
-
-function typeUser(el, text, cb) {
-
-  let i = 0;
-
-  function step() {
-    if (i <= text.length) {
-      el.innerText = text.slice(0, i);
-      i++;
-      setTimeout(step, 40);
-    } else cb();
-  }
-
-  step();
-}
-
-/* ---------------- BOOT ---------------- */
-
-function startBoot() {
-
-  const u = document.getElementById("userField");
-  const p = document.getElementById("passField");
-  const bootText = document.getElementById("bootText");
-
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const source = ctx.createMediaElementSource(loginSfx);
-  const gain = ctx.createGain();
-  gain.gain.value = 1.1;
-  source.connect(gain);
-  gain.connect(ctx.destination);
-
-  setTimeout(() => {
-    loginSfx.play().catch(()=>{});
-  }, 800);
-
-  typeUser(u, "SusanSurandin", () => {
-
-    typePassword(p, "WitnessMe").then(() => {
-
-      bootText.style.opacity = 1;
-      bootText.innerText = "WELCOME BACK SUSAN";
+      loadTrack(savedTrack, savedTime || 0);
 
       setTimeout(() => {
-        document.getElementById("boot").style.display = "none";
-        playTrack(0);
-      }, 1500);
+        statusText.classList.remove("show");
+      }, 2000);
 
-    });
+    } else {
+      loadTrack(1);
+    }
 
-  });
-}
+    return;
+  }
 
-window.addEventListener("click", startBoot, { once: true });
-window.addEventListener("load", renderPlaylist);
+  // ---------------- NORMAL PLAYBACK ----------------
+  if (!loopEnabled) {
+    let next = currentTrack + 1;
 
-</script>
-
-</body>
-</html>
+    if (next >= tracks.length) {
+      audio.pause();
+    } else {
+      loadTrack(next);
+    }
+  } else {
+    audio.currentTime = 0;
+    audio.play();
+  }
+});
