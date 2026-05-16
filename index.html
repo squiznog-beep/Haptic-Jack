@@ -2,305 +2,87 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.14h</title>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+<title>TRI▲GE</title>
 
 <style>
 body {
   margin: 0;
-  background: white;
+  background: #ffffff;
+  color: #c00000;
   font-family: monospace;
-  color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
   overflow: hidden;
 }
 
-/* ---------------- BOOT ---------------- */
-
 #boot {
-  position: fixed;
-  inset: 0;
-  background: white;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-#bootVer {
-  font-size: 12px;
-  margin-left: 12px;
-  position: relative;
-  top: 6px;
-  color: black; /* required */
-}
-
-#title {
-  font-size: 32px;
-  color: red;
-  letter-spacing: 4px;
-  margin-bottom: 40px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.triangle {
-  width: 0.9em;
-  height: 0.9em;
-  background: red;
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  position: relative;
-  top: 2px;
-}
-
-.label {
-  opacity: 0.6;
-  margin-bottom: 4px;
-}
-
-.field {
-  width: 260px;
-  border-bottom: 1px solid #ccc;
-  padding: 6px;
-  font-size: 14px;
-  min-height: 20px;
-  margin-bottom: 15px;
-}
-
-#bootText {
-  margin-top: 30px;
-  font-size: 18px;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-
-/* ---------------- PLAYER ---------------- */
-
-.wrapper {
-  max-width: 520px;
-  margin: auto;
-  padding: 20px;
-  margin-top: 60px;
-  background: rgba(255,0,0,0.05);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
-}
-
-#playlist {
-  margin-top: 20px;
   text-align: center;
-}
-
-.track {
-  padding: 6px;
-  transition: all 0.25s ease;
   cursor: pointer;
 }
 
-.track.active {
-  font-weight: bold;
-  opacity: 1;
-  transform: scale(1.3);
-  color: red;
+#title {
+  font-size: 48px;
+  letter-spacing: 8px;
+  margin-bottom: 20px;
 }
 
-.track.near {
-  opacity: 0.5;
-  transform: scale(1);
+.triangle {
+  display: inline-block;
+  width: 0;
+  height: 0;
+  border-left: 14px solid transparent;
+  border-right: 14px solid transparent;
+  border-bottom: 24px solid #c00000;
+  margin: 0 4px;
 }
 
-.track.far {
-  opacity: 0.2;
-  transform: scale(0.85);
+#bootVer {
+  display: block;
+  margin-top: 10px;
+  font-size: 14px;
+  color: #000000; /* black version text */
 }
 
-#volumeSlider {
-  width: 100%;
-  margin-top: 20px;
-  accent-color: red;
+#initText {
+  margin-top: 30px;
+  font-size: 18px;
 }
 
-#logo {
-  position: fixed;
-  bottom: 10px;
-  left: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  opacity: 0.6;
-  color: red;
-}
-
-#version {
-  position: fixed;
-  bottom: 10px;
-  right: 12px;
-  font-size: 11px;
-  opacity: 0.5;
-  color: black;
+.hidden {
+  display: none;
 }
 </style>
 </head>
 
 <body>
 
-<!-- BOOT -->
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.14h</span>
   </div>
-
-  <div class="label">Username</div>
-  <div class="field" id="userField"></div>
-
-  <div class="label">Password</div>
-  <div class="field" id="passField"></div>
-
-  <div id="bootText">INITIALIZING...</div>
+  <span id="bootVer">0.14g</span>
+  <div id="initText">CLICK TO INITIALIZE</div>
 </div>
 
-<!-- PLAYER -->
-<div class="wrapper">
-  <div id="playlist"></div>
-  <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
-</div>
-
-<div id="logo">
-  T R I <div class="triangle"></div> G E
-</div>
-
-<div id="version">
-Last Functional Build: 0.14g<br>
-Current Build: 0.14h
-</div>
+<audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
 
 <script>
+const boot = document.getElementById("boot");
+const sfx = document.getElementById("loginSfx");
 
-/* ---------------- TRACKS ---------------- */
-
-const tracks = [
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.1 },
-  { title: "Announcement 1", file: "Announcement1.oga", volume: 0.6 },
-  { title: "Control Yourself", file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", volume: 0.05 },
-  { title: "Stability", file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume: 0.05 },
-  { title: "Announcement 2", file: "Announcement2.oga", volume: 0.6 },
-  { title: "Announcement 3", file: "Announcement3.oga", volume: 0.6 },
-  { title: "Announcement 4", file: "Announcement4.oga", volume: 0.6 },
-  { title: "Announcement 6", file: "Announcement6.oga", volume: 0.6 }
-];
-
-let currentTrack = 0;
-let currentHowl = null;
-const playlistEl = document.getElementById("playlist");
-const volumeSlider = document.getElementById("volumeSlider");
-
-/* ---------------- PLAYLIST ---------------- */
-
-function renderPlaylist() {
-  playlistEl.innerHTML = "";
-  for (let i = 0; i < tracks.length; i++) {
-    const distance = i - currentTrack;
-    if (Math.abs(distance) > 2) continue;
-
-    const el = document.createElement("div");
-    el.classList.add("track");
-    el.innerText = tracks[i].title;
-
-    if (distance === 0) el.classList.add("active");
-    else if (Math.abs(distance) === 1) el.classList.add("near");
-    else el.classList.add("far");
-
-    el.onclick = () => playTrack(i);
-    playlistEl.appendChild(el);
-  }
-}
-
-/* ---------------- PLAY TRACK ---------------- */
-
-function playTrack(i) {
-  currentTrack = i;
-  if (currentHowl) currentHowl.stop();
-
-  const baseVolume = tracks[i].volume ?? 1;
-  const sliderVolume = parseFloat(volumeSlider.value);
-
-  currentHowl = new Howl({
-    src: [tracks[i].file],
-    volume: baseVolume * sliderVolume
-  });
-
-  currentHowl.play();
-
-  currentHowl.on("end", () => {
-    if (currentTrack + 1 < tracks.length) {
-      playTrack(currentTrack + 1);
-    }
-  });
-
-  renderPlaylist();
-}
-
-/* ---------------- VOLUME ---------------- */
-
-volumeSlider.addEventListener("input", () => {
-  if (!currentHowl) return;
-  const baseVolume = tracks[currentTrack].volume ?? 1;
-  currentHowl.volume(baseVolume * parseFloat(volumeSlider.value));
-});
-
-/* ---------------- PASSWORD ---------------- */
-
-async function typePassword(el, text) {
-  let masked = "";
-  for (let i = 0; i < text.length; i++) {
-    el.innerText = masked + text[i];
-    await new Promise(r => setTimeout(r, 100));
-    masked += "*";
-    el.innerText = masked;
-  }
-}
-
-function typeUser(el, text, cb) {
-  let i = 0;
-  function step() {
-    if (i <= text.length) {
-      el.innerText = text.slice(0, i);
-      i++;
-      setTimeout(step, 40);
-    } else cb();
-  }
-  step();
-}
-
-/* ---------------- BOOT ---------------- */
-
-function startBoot() {
-  const u = document.getElementById("userField");
-  const p = document.getElementById("passField");
-  const bootText = document.getElementById("bootText");
+boot.addEventListener("click", () => {
+  document.getElementById("initText").innerText = "INITIALIZING...";
+  
+  setTimeout(() => {
+    sfx.play();
+  }, 400);
 
   setTimeout(() => {
-    new Howl({ src: ["Notes5.oga"], volume: 1 }).play();
-  }, 1600);
-
-  typeUser(u, "SusanSurandin", () => {
-    typePassword(p, "WitnessMe").then(() => {
-      bootText.style.opacity = 1;
-      bootText.innerText = "WELCOME BACK SUSAN";
-      setTimeout(() => {
-        document.getElementById("boot").style.display = "none";
-        playTrack(0);
-      }, 1500);
-    });
-  });
-}
-
-window.addEventListener("click", startBoot, { once: true });
-window.addEventListener("load", renderPlaylist);
-
+    boot.innerHTML = "<div>BOOT COMPLETE</div>";
+  }, 1200);
+});
 </script>
 
 </body>
