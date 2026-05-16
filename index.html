@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE v0.17.1</title>
+<title>TRI▲GE v0.17.2</title>
 
 <style>
 
@@ -107,18 +107,14 @@ transform: translateX(calc(1% + 4px));
 }
 
 #layout {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 120px;
+  position: relative;
 }
 
 #floatingPlay {
   position: absolute;
-  left: calc(50% - 260px); /* shifts it left of centered panel */
+  left: -90px;   /* stable offset from panel */
   top: 50%;
   transform: translateY(-50%);
-  cursor: pointer;
 }
 
 #panel {
@@ -293,7 +289,7 @@ input[type=range] {
     <span>E</span>
   </div>
 
-  <div id="bootVer">v0.17.1</div>
+  <div id="bootVer">v0.17.2</div>
 
   <div class="field" id="userField"></div>
   <div class="field" id="passField"></div>
@@ -303,32 +299,33 @@ input[type=range] {
 </div>
 
 <!-- PLAYER -->
+<!-- PLAYER -->
 <div id="wrapper">
 
   <div id="layout">
 
-  <div id="floatingPlay" class="playTriangle"></div>
+    <div id="floatingPlay" class="playTriangle"></div>
 
-  <div id="panel">
-    </div> <!-- panel -->
-</div> <!-- layout -->
+    <div id="panel">
 
-    <div id="playlist"></div>
+      <div id="playlist"></div>
 
-    <div id="controls">
+      <div id="controls">
 
-      <div id="transport">
-        <button id="playPause">
-          <div class="playTriangle" id="playIcon"></div>
-        </button>
-      </div>
+        <div id="transport">
+          <button id="playPause">
+            <div class="playTriangle" id="playIcon"></div>
+          </button>
+        </div>
 
-      <div id="progressContainer">
-        <div id="progressBar"></div>
-      </div>
+        <div id="progressContainer">
+          <div id="progressBar"></div>
+        </div>
 
-      <div id="volumeWrap">
-        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+        <div id="volumeWrap">
+          <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+        </div>
+
       </div>
 
     </div>
@@ -343,7 +340,7 @@ input[type=range] {
 
 <div id="version">
 Last Functional Build: N/A<br>
-Current Build: 0.17.1
+Current Build: 0.17.2
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
@@ -471,12 +468,13 @@ function renderPlaylist() {
 
     div.appendChild(document.createTextNode(tracks[i].title));
 
-    floatingPlay.onclick = togglePlay;
     div.onclick = () => playTrack(i);
     
     playlist.appendChild(div);
   }
 }
+
+floatingPlay.addEventListener("click", togglePlay);
 
 /* ---------------- PROGRESS ---------------- */
 
