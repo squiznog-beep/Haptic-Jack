@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.13e</title>
+<title>Haptic Player v0.13f</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -51,11 +51,12 @@ body {
 }
 
 #bootVer {
-  font-size: 12px;
+  font-size: 30px;
   opacity: 0.5;
   margin-left: 12px;
   position: relative;
   top: 6px;
+  color: white;
 }
 
 #title {
@@ -163,7 +164,7 @@ body {
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.13e</span>
+    <span id="bootVer">0.13f</span>
   </div>
 
   <div class="label">Username</div>
@@ -187,7 +188,7 @@ body {
 
 <div id="version">
 Last Functional Build: 0.12<br>
-Current Build: 0.13e
+Current Build: 0.13f
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -264,6 +265,13 @@ function playTrack(i) {
 
   currentTrack = i;
 
+  const v = tracks[i].volume ?? 1;
+
+  // APPLY TO NATIVE AUDIO FIRST (CRITICAL ON IOS)
+  audio.volume = v;
+
+  player.volume = v;
+
   player.source = {
     type: 'audio',
     sources: [{
@@ -275,11 +283,6 @@ function playTrack(i) {
   renderPlaylist();
 
   player.once('loadedmetadata', () => {
-
-    const v = tracks[i].volume ?? 1;
-
-    applyVolume(v);
-
     player.play().catch(()=>{});
   });
 }
