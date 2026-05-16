@@ -1,71 +1,92 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>MediaElement Volume Test</title>
+<title>0.14g – Howler Volume Test</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mediaelement@4.2.17/build/mediaelementplayer.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
 
 <style>
-body {
-  font-family: monospace;
-  background: white;
-  color: black;
-  padding: 40px;
-}
+  body {
+    margin: 0;
+    background: #0b0b0b;
+    color: white;
+    font-family: Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
 
-.wrapper {
-  max-width: 500px;
-}
+  .player {
+    text-align: center;
+    width: 320px;
+  }
 
-label {
-  display: block;
-  margin-top: 20px;
-}
+  button {
+    width: 120px;
+    padding: 10px;
+    font-size: 16px;
+    margin-bottom: 25px;
+    cursor: pointer;
+  }
 
-input[type="range"] {
-  width: 300px;
-}
+  input[type="range"] {
+    width: 100%;
+  }
+
+  label {
+    display: block;
+    margin-bottom: 8px;
+  }
 </style>
 </head>
-
 <body>
 
-<div class="wrapper">
+<div class="player">
+  <h2>Prologue</h2>
 
-  <h2>Prologue Volume Test</h2>
+  <button id="playBtn">Play</button>
 
-  <audio id="player" controls preload="auto">
-    <source src="The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" type="audio/mp3">
-  </audio>
-
-  <label>
-    Volume
-    <input id="volume" type="range" min="0" max="1" step="0.01" value="0.5">
-  </label>
-
+  <label>Volume</label>
+  <input id="volumeSlider"
+         type="range"
+         min="0"
+         max="1"
+         step="0.01"
+         value="1">
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/mediaelement@4.2.17/build/mediaelement-and-player.min.js"></script>
-
 <script>
-const audio = document.getElementById("player");
+  // Uses WebAudio (NOT html5 fallback)
+  const prologue = new Howl({
+    src: ['Prologue.mp3'], 
+    html5: false,
+    volume: 1
+  });
 
-// initialize MediaElement.js
-const player = new MediaElementPlayer(audio, {
-  features: ['playpause', 'progress', 'volume']
-});
+  const playBtn = document.getElementById('playBtn');
+  const volumeSlider = document.getElementById('volumeSlider');
 
-// direct volume control test
-const slider = document.getElementById("volume");
+  let playing = false;
 
-slider.addEventListener("input", () => {
-  const v = parseFloat(slider.value);
+  playBtn.addEventListener('click', () => {
+    if (!playing) {
+      prologue.play();
+      playBtn.textContent = 'Pause';
+      playing = true;
+    } else {
+      prologue.pause();
+      playBtn.textContent = 'Play';
+      playing = false;
+    }
+  });
 
-  // IMPORTANT: set BOTH
-  player.setVolume(v);
-  audio.volume = v;
-});
+  volumeSlider.addEventListener('input', (e) => {
+    const value = parseFloat(e.target.value);
+    prologue.volume(value);
+  });
 </script>
 
 </body>
