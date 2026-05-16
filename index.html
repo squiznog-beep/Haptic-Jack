@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE v0.15.4</title>
+<title>TRI▲GE v0.15.5</title>
 
 <style>
 
@@ -33,13 +33,16 @@ body {
   transition: opacity 0.6s ease;
 }
 
+/* FIXED HEADER CENTERING */
 #title {
   display: flex;
   align-items: center;
+  justify-content: center;
+  width: 100%;
+  letter-spacing: 4px;
 
   color: #c00000;
   font-size: 40px;
-  letter-spacing: 4px;
 }
 
 #title span {
@@ -50,6 +53,7 @@ body {
   margin-right: 8px;
 }
 
+/* TRIANGLE OPTICAL SPACING FIX */
 .triangle {
   width: 0;
   height: 0;
@@ -58,7 +62,8 @@ body {
   border-right: 14px solid transparent;
   border-bottom: 24px solid #c00000;
 
-  margin: 0 10px;
+  margin-left: 10px;
+  margin-right: 18px;
 }
 
 #bootVer {
@@ -122,6 +127,13 @@ body {
 
 .track {
   padding: 6px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 10px;
+
   transition: all 0.25s ease;
   cursor: pointer;
 }
@@ -162,6 +174,7 @@ body {
   cursor: pointer;
 }
 
+/* base triangle */
 .playTriangle {
 
   width: 0;
@@ -174,16 +187,17 @@ body {
   transform-origin: center center;
 }
 
+/* SMOOTH ROTATION (FIXED JANK) */
 .playTriangle.spinning {
-  animation: triSpin 3.5s steps(1) infinite;
+  animation: smoothSpin 2.8s linear infinite;
 }
 
-@keyframes triSpin {
-  0%   { transform: rotate(0deg); }
-  25%  { transform: rotate(90deg); }
-  50%  { transform: rotate(180deg); }
-  75%  { transform: rotate(270deg); }
-  100% { transform: rotate(360deg); }
+@keyframes smoothSpin {
+  0%   { transform: rotate(0deg) scale(1); }
+  25%  { transform: rotate(90deg) scale(1.02); }
+  50%  { transform: rotate(180deg) scale(1); }
+  75%  { transform: rotate(270deg) scale(1.02); }
+  100% { transform: rotate(360deg) scale(1); }
 }
 
 /* ---------------- PROGRESS ---------------- */
@@ -251,7 +265,6 @@ input[type=range] {
 <body>
 
 <!-- BOOT -->
-
 <div id="boot">
 
   <div id="title">
@@ -265,7 +278,7 @@ input[type=range] {
     <span>E</span>
   </div>
 
-  <div id="bootVer">v0.15.4</div>
+  <div id="bootVer">v0.15.5</div>
 
   <div class="field" id="userField"></div>
   <div class="field" id="passField"></div>
@@ -275,7 +288,6 @@ input[type=range] {
 </div>
 
 <!-- PLAYER -->
-
 <div id="wrapper">
 
   <div id="panel">
@@ -310,7 +322,7 @@ input[type=range] {
 
 <div id="version">
 Last Functional Build: N/A<br>
-Current Build: 0.15.4
+Current Build: 0.15.5
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
@@ -320,46 +332,14 @@ Current Build: 0.15.4
 /* ---------------- TRACK DATA ---------------- */
 
 const tracks = [
-  {
-    title: "Prologue",
-    file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3",
-    volume: 0.10
-  },
-  {
-    title: "Announcement 1",
-    file: "Announcement1.oga",
-    volume: 0.60
-  },
-  {
-    title: "Control Yourself",
-    file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac",
-    volume: 0.05
-  },
-  {
-    title: "Stability",
-    file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3",
-    volume: 0.05
-  },
-  {
-    title: "Announcement 2",
-    file: "Announcement2.oga",
-    volume: 0.60
-  },
-  {
-    title: "Announcement 3",
-    file: "Announcement3.oga",
-    volume: 0.60
-  },
-  {
-    title: "Announcement 4",
-    file: "Announcement4.oga",
-    volume: 0.60
-  },
-  {
-    title: "Announcement 6",
-    file: "Announcement6.oga",
-    volume: 0.60
-  }
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.10 },
+  { title: "Announcement 1", file: "Announcement1.oga", volume: 0.60 },
+  { title: "Control Yourself", file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", volume: 0.05 },
+  { title: "Stability", file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume: 0.05 },
+  { title: "Announcement 2", file: "Announcement2.oga", volume: 0.60 },
+  { title: "Announcement 3", file: "Announcement3.oga", volume: 0.60 },
+  { title: "Announcement 4", file: "Announcement4.oga", volume: 0.60 },
+  { title: "Announcement 6", file: "Announcement6.oga", volume: 0.60 }
 ];
 
 /* ---------------- STATE ---------------- */
@@ -391,7 +371,7 @@ function applyVolume() {
 
   sound.volume(actual);
 
-  // iOS FIX (critical)
+  // iOS FIX
   if (sound._sounds && sound._sounds[0] && sound._sounds[0]._node) {
     sound._sounds[0]._node.volume = actual;
   }
@@ -422,29 +402,16 @@ function playTrack(i) {
 
     onplay: updatePlayButton,
     onpause: updatePlayButton,
+
     onend: () => {
-
       updatePlayButton();
-
-      if (currentTrack + 1 < tracks.length) {
-        playTrack(currentTrack + 1);
-      }
+      if (currentTrack + 1 < tracks.length) playTrack(currentTrack + 1);
     }
   });
 
   sound.play();
   renderPlaylist();
 }
-
-playPause.onclick = () => {
-
-  if (!sound) return;
-
-  if (sound.playing()) sound.pause();
-  else sound.play();
-
-  updatePlayButton();
-};
 
 /* ---------------- PLAYLIST ---------------- */
 
@@ -460,11 +427,24 @@ function renderPlaylist() {
     const div = document.createElement("div");
     div.classList.add("track");
 
-    if (distance === 0) div.classList.add("active");
+    if (distance === 0) {
+
+      div.classList.add("active");
+
+      const btn = document.createElement("div");
+      btn.className = "playTriangle spinning";
+
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        playTrack(i);
+      };
+
+      div.prepend(btn);
+    }
     else if (Math.abs(distance) === 1) div.classList.add("near");
     else div.classList.add("far");
 
-    div.innerText = tracks[i].title;
+    div.appendChild(document.createTextNode(tracks[i].title));
 
     div.onclick = () => playTrack(i);
 
@@ -507,16 +487,14 @@ volumeSlider.addEventListener("input", (e) => {
   applyVolume();
 });
 
-/* ---------------- TYPE EFFECTS ---------------- */
+/* ---------------- TYPE ---------------- */
 
 function sleep(ms) {
   return new Promise(r => setTimeout(r, ms));
 }
 
 async function typeUser(text) {
-
   const el = document.getElementById("userField");
-
   for (let i = 0; i <= text.length; i++) {
     el.innerText = text.slice(0, i);
     await sleep(40);
@@ -524,18 +502,14 @@ async function typeUser(text) {
 }
 
 async function typePassword(text) {
-
   const el = document.getElementById("passField");
 
   let masked = "";
 
   for (let i = 0; i < text.length; i++) {
-
     el.innerText = masked + text[i];
     await sleep(40);
-
     masked += "*";
-
     el.innerText = masked;
     await sleep(40);
   }
@@ -576,7 +550,7 @@ async function bootSequence() {
   updateProgress();
 }
 
-/* ---------------- IOS START FIX ---------------- */
+/* ---------------- IOS INIT ---------------- */
 
 let started = false;
 
