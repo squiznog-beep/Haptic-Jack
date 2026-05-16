@@ -1,92 +1,96 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
 <head>
 <meta charset="utf-8">
-<title>0.14g – Howler Volume Test</title>
+<title>Haptic Player – Howler Test</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
 
 <style>
-  body {
-    margin: 0;
-    background: #0b0b0b;
-    color: white;
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
-  }
+body {
+  margin: 0;
+  background: black;
+  font-family: monospace;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
 
-  .player {
-    text-align: center;
-    width: 320px;
-  }
+.wrapper {
+  width: 420px;
+  padding: 30px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+  text-align: center;
+}
 
-  button {
-    width: 120px;
-    padding: 10px;
-    font-size: 16px;
-    margin-bottom: 25px;
-    cursor: pointer;
-  }
+button {
+  margin: 20px 0;
+  padding: 10px 20px;
+  font-size: 16px;
+  cursor: pointer;
+}
 
-  input[type="range"] {
-    width: 100%;
-  }
-
-  label {
-    display: block;
-    margin-bottom: 8px;
-  }
+input[type="range"] {
+  width: 100%;
+}
 </style>
 </head>
+
 <body>
 
-<div class="player">
+<div class="wrapper">
   <h2>Prologue</h2>
 
   <button id="playBtn">Play</button>
 
-  <label>Volume</label>
-  <input id="volumeSlider"
-         type="range"
-         min="0"
-         max="1"
-         step="0.01"
-         value="1">
+  <div>
+    <label>Volume</label>
+    <input id="volumeSlider"
+           type="range"
+           min="0"
+           max="1"
+           step="0.01"
+           value="1">
+  </div>
 </div>
 
 <script>
-  // Uses WebAudio (NOT html5 fallback)
-  const prologue = new Howl({
-    src: ['Prologue.mp3'], 
-    html5: false,
-    volume: 1
-  });
 
-  const playBtn = document.getElementById('playBtn');
-  const volumeSlider = document.getElementById('volumeSlider');
+// EXACT file name from your original build
+const sound = new Howl({
+  src: ["The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3"],
+  html5: false,   // FORCE WebAudio
+  volume: 1
+});
 
-  let playing = false;
+let playing = false;
 
-  playBtn.addEventListener('click', () => {
-    if (!playing) {
-      prologue.play();
-      playBtn.textContent = 'Pause';
-      playing = true;
-    } else {
-      prologue.pause();
-      playBtn.textContent = 'Play';
-      playing = false;
-    }
-  });
+const playBtn = document.getElementById("playBtn");
+const slider = document.getElementById("volumeSlider");
 
-  volumeSlider.addEventListener('input', (e) => {
-    const value = parseFloat(e.target.value);
-    prologue.volume(value);
-  });
+playBtn.addEventListener("click", () => {
+
+  if (!playing) {
+    sound.play();
+    playBtn.textContent = "Pause";
+    playing = true;
+  } else {
+    sound.pause();
+    playBtn.textContent = "Play";
+    playing = false;
+  }
+
+});
+
+slider.addEventListener("input", (e) => {
+  sound.volume(parseFloat(e.target.value));
+});
+
 </script>
 
 </body>
