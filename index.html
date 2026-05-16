@@ -2,17 +2,17 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE v0.15</title>
+<title>TRI▲GE v0.15.1</title>
 
 <style>
 
-/* ---------------- BASE (EXPERIMENTAL STYLE) ---------------- */
+/* ---------------- BASE ---------------- */
 
 body {
   margin: 0;
   background: white;
-  font-family: monospace;
   color: black;
+  font-family: monospace;
   overflow: hidden;
 }
 
@@ -22,19 +22,22 @@ body {
   position: fixed;
   inset: 0;
   background: white;
+  z-index: 9999;
+
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+
   cursor: pointer;
-  z-index: 9999;
   transition: opacity 0.6s ease;
 }
 
 #title {
-  font-size: 44px;
+  font-size: 40px;
   letter-spacing: 6px;
   color: #c00000;
+
   display: flex;
   align-items: center;
   gap: 8px;
@@ -43,6 +46,7 @@ body {
 .triangle {
   width: 0;
   height: 0;
+
   border-left: 14px solid transparent;
   border-right: 14px solid transparent;
   border-bottom: 24px solid #c00000;
@@ -51,71 +55,95 @@ body {
 #bootVer {
   margin-top: 10px;
   font-size: 13px;
-  color: black;
 }
 
 .field {
   width: 260px;
   border-bottom: 1px solid #ddd;
   padding: 6px;
-  margin-top: 12px;
+  margin-top: 14px;
   min-height: 18px;
 }
 
 #bootText {
-  margin-top: 25px;
+  margin-top: 28px;
   opacity: 0;
-  transition: opacity 0.4s ease;
-  color: black;
+  transition: opacity 0.3s ease;
 }
 
-/* ---------------- PLAYER LAYOUT FIX ---------------- */
+/* ---------------- PLAYER ---------------- */
 
-.wrapper {
-  display: none;
+#wrapper {
   height: 100vh;
 
-  /* THIS is what fixed your “slid left” issue */
-  display: flex;
+  display: none;
   justify-content: center;
   align-items: center;
 }
 
-/* centered panel */
-.panel {
-  width: 420px;
-  padding: 20px;
-
-  background: white;
-  border: 1px solid #eee;
+#panel {
+  width: 520px;
+  text-align: center;
 }
 
 /* ---------------- PLAYLIST ---------------- */
 
 #playlist {
-  text-align: center;
+  margin-top: 30px;
 }
 
 .track {
   padding: 6px;
+  transition: all 0.25s ease;
   cursor: pointer;
-  color: black;
-  transition: 0.2s ease;
 }
 
 .track.active {
   color: #c00000;
   font-weight: bold;
-  transform: scale(1.25);
+  transform: scale(1.28);
 }
 
 .track.near {
-  opacity: 0.6;
+  opacity: 0.55;
 }
 
 .track.far {
   opacity: 0.2;
-  transform: scale(0.9);
+  transform: scale(0.88);
+}
+
+/* ---------------- CONTROLS ---------------- */
+
+#controls {
+  margin-top: 40px;
+}
+
+/* progress */
+
+#progressContainer {
+  width: 100%;
+  height: 6px;
+  background: #eee;
+  position: relative;
+  cursor: pointer;
+}
+
+#progressBar {
+  width: 0%;
+  height: 100%;
+  background: #c00000;
+}
+
+/* volume */
+
+#volumeWrap {
+  margin-top: 22px;
+}
+
+input[type=range] {
+  width: 220px;
+  accent-color: #c00000;
 }
 
 /* ---------------- VERSION ---------------- */
@@ -126,7 +154,6 @@ body {
   right: 12px;
   font-size: 11px;
   opacity: 0.6;
-  color: black;
 }
 
 </style>
@@ -135,156 +162,314 @@ body {
 <body>
 
 <!-- BOOT -->
+
 <div id="boot">
+
   <div id="title">
     T R I <div class="triangle"></div> G E
   </div>
 
-  <div id="bootVer">v0.15</div>
+  <div id="bootVer">v0.15.1</div>
 
   <div class="field" id="userField"></div>
   <div class="field" id="passField"></div>
 
-  <div id="bootText">CLICK TO INITIALIZE</div>
+  <div id="bootText">
+    CLICK TO INITIALIZE
+  </div>
+
 </div>
 
 <!-- PLAYER -->
-<div class="wrapper" id="wrapper">
-  <div class="panel">
+
+<div id="wrapper">
+
+  <div id="panel">
+
     <div id="playlist"></div>
+
+    <div id="controls">
+
+      <div id="progressContainer">
+        <div id="progressBar"></div>
+      </div>
+
+      <div id="volumeWrap">
+        <input
+          type="range"
+          id="volumeSlider"
+          min="0"
+          max="1"
+          step="0.01"
+          value="1">
+      </div>
+
+    </div>
+
   </div>
+
 </div>
 
 <div id="version">
 Last Functional Build: N/A<br>
-Current Build: 0.15
+Current Build: 0.15.1
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
 
 <script>
 
-/* ---------------- TRACKS ---------------- */
+/* ---------------- TRACK DATA ---------------- */
 
 const tracks = [
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.1 },
-  { title: "Announcement 1", file: "Announcement1.oga", volume: 0.6 },
-  { title: "Control Yourself", file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", volume: 0.05 },
-  { title: "Stability", file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume: 0.05 },
-  { title: "Announcement 2", file: "Announcement2.oga", volume: 0.6 }
+  {
+    title: "Prologue",
+    file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3",
+    volume: 0.10
+  },
+  {
+    title: "Announcement 1",
+    file: "Announcement1.oga",
+    volume: 0.60
+  },
+  {
+    title: "Control Yourself",
+    file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac",
+    volume: 0.05
+  },
+  {
+    title: "Stability",
+    file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3",
+    volume: 0.05
+  },
+  {
+    title: "Announcement 2",
+    file: "Announcement2.oga",
+    volume: 0.60
+  }
 ];
+
+/* ---------------- STATE ---------------- */
 
 let currentTrack = 0;
 let sound = null;
 
+let globalVolume = 1;
+
 /* ---------------- ELEMENTS ---------------- */
 
-const boot = document.getElementById("boot");
-const bootText = document.getElementById("bootText");
-const u = document.getElementById("userField");
-const p = document.getElementById("passField");
 const wrapper = document.getElementById("wrapper");
+const playlist = document.getElementById("playlist");
 
-/* ---------------- TYPE EFFECTS ---------------- */
+const progressBar = document.getElementById("progressBar");
+const progressContainer = document.getElementById("progressContainer");
 
-function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+const volumeSlider = document.getElementById("volumeSlider");
 
-async function typeUser(text) {
-  for (let i = 0; i <= text.length; i++) {
-    u.innerText = text.slice(0, i);
-    await sleep(40);
-  }
+/* ---------------- AUDIO ---------------- */
+
+function applyVolume() {
+
+  if (!sound) return;
+
+  sound.volume(
+    tracks[currentTrack].volume * globalVolume
+  );
 }
-
-/* FIXED: per-character asterisk replacement */
-async function typePassword(text) {
-  let visible = "";
-
-  for (let i = 0; i < text.length; i++) {
-    visible += text[i];
-
-    let masked = "";
-    for (let j = 0; j < visible.length; j++) masked += "*";
-
-    p.innerText = masked;
-
-    await sleep(90);
-  }
-}
-
-/* ---------------- HOWLER ---------------- */
 
 function playTrack(i) {
 
   currentTrack = i;
 
-  if (sound) sound.unload();
+  if (sound) {
+    sound.unload();
+  }
 
   sound = new Howl({
     src: [tracks[i].file],
-    volume: tracks[i].volume ?? 1,
-    html5: true
+    html5: true,
+    volume: tracks[i].volume * globalVolume,
+
+    onend: () => {
+
+      if (currentTrack + 1 < tracks.length) {
+        playTrack(currentTrack + 1);
+      }
+
+    }
   });
 
   sound.play();
+
+  renderPlaylist();
 }
 
-/* ---------------- SLIDING 5-TRACK WINDOW ---------------- */
+/* ---------------- PLAYLIST ---------------- */
 
-function render() {
-  const el = document.getElementById("playlist");
-  el.innerHTML = "";
+function renderPlaylist() {
 
-  tracks.forEach((t, i) => {
+  playlist.innerHTML = "";
 
-    const dist = i - currentTrack;
-    if (Math.abs(dist) > 2) return;
+  for (let i = 0; i < tracks.length; i++) {
+
+    const distance = i - currentTrack;
+
+    if (Math.abs(distance) > 2) continue;
 
     const div = document.createElement("div");
-    div.className = "track";
 
-    if (dist === 0) div.classList.add("active");
-    else if (Math.abs(dist) === 1) div.classList.add("near");
-    else div.classList.add("far");
+    div.classList.add("track");
 
-    div.innerText = t.title;
-    div.onclick = () => playTrack(i);
+    if (distance === 0) {
+      div.classList.add("active");
+    }
+    else if (Math.abs(distance) === 1) {
+      div.classList.add("near");
+    }
+    else {
+      div.classList.add("far");
+    }
 
-    el.appendChild(div);
-  });
+    div.innerText = tracks[i].title;
+
+    div.onclick = () => {
+      playTrack(i);
+    };
+
+    playlist.appendChild(div);
+  }
+}
+
+/* ---------------- PROGRESS BAR ---------------- */
+
+function updateProgress() {
+
+  if (!sound) {
+    requestAnimationFrame(updateProgress);
+    return;
+  }
+
+  const seek = sound.seek() || 0;
+  const duration = sound.duration() || 1;
+
+  const percent = (seek / duration) * 100;
+
+  progressBar.style.width = percent + "%";
+
+  requestAnimationFrame(updateProgress);
+}
+
+progressContainer.onclick = (e) => {
+
+  if (!sound) return;
+
+  const rect = progressContainer.getBoundingClientRect();
+
+  const x = e.clientX - rect.left;
+
+  const ratio = x / rect.width;
+
+  sound.seek(
+    ratio * sound.duration()
+  );
+};
+
+/* ---------------- VOLUME ---------------- */
+
+volumeSlider.addEventListener("input", (e) => {
+
+  globalVolume = parseFloat(e.target.value);
+
+  applyVolume();
+});
+
+/* ---------------- TYPE EFFECTS ---------------- */
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+async function typeUser(text) {
+
+  const el = document.getElementById("userField");
+
+  for (let i = 0; i <= text.length; i++) {
+
+    el.innerText = text.slice(0, i);
+
+    await sleep(40);
+  }
+}
+
+async function typePassword(text) {
+
+  const el = document.getElementById("passField");
+
+  let masked = "";
+
+  for (let i = 0; i < text.length; i++) {
+
+    el.innerText = masked + text[i];
+
+    await sleep(90);
+
+    masked += "*";
+
+    el.innerText = masked;
+  }
 }
 
 /* ---------------- BOOT ---------------- */
 
 async function bootSequence() {
 
+  const boot = document.getElementById("boot");
+  const bootText = document.getElementById("bootText");
+
   bootText.style.opacity = 1;
 
   await sleep(400);
+
   await typeUser("SusanSurandin");
 
-  await sleep(200);
+  await sleep(220);
+
   await typePassword("WitnessMe");
 
   await sleep(500);
 
-  bootText.innerText = "INITIALIZING AUDIO SUBSYSTEM";
-  await sleep(800);
+  bootText.innerText =
+    "INITIALIZING AUDIO SUBSYSTEM";
 
-  bootText.innerText = "WELCOME BACK SUSAN";
+  await sleep(850);
+
+  bootText.innerText =
+    "WELCOME BACK SUSAN";
+
   await sleep(700);
 
   boot.style.opacity = 0;
+
   await sleep(600);
 
   boot.style.display = "none";
+
   wrapper.style.display = "flex";
 
-  render();
+  renderPlaylist();
+
   playTrack(0);
+
+  updateProgress();
 }
 
-window.addEventListener("click", bootSequence, { once: true });
+/* ---------------- INIT ---------------- */
+
+window.addEventListener(
+  "click",
+  bootSequence,
+  { once: true }
+);
 
 </script>
 
