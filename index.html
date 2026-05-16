@@ -39,9 +39,10 @@ body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  letter-spacing: 4px;
+  letter-spacing: 12px;
+transform: translateX(calc(1% + 4px));
 
-  color: #c00000;
+  color: #b938948;
   font-size: 40px;
 }
 
@@ -108,8 +109,8 @@ body {
 
 #floatingPlay {
   position: absolute;
-  left: calc(50% - 260px - 80px); /* 20% visual offset */
-  top: 50%;
+  left: calc(70% - 260px - 80px); /* 20% visual offset */
+  top: 41%;
   transform: translateY(-50%);
   cursor: pointer;
 }
@@ -140,7 +141,7 @@ body {
   align-items: center;
   justify-content: center;
 
-  gap: 10px;
+  gap: 5px;
 
   transition: all 0.25s ease;
   cursor: pointer;
@@ -180,19 +181,6 @@ body {
   border: none;
   background: transparent;
   cursor: pointer;
-}
-
-/* base triangle */
-.playTriangle {
-
-  width: 0;
-  height: 0;
-
-  border-left: 18px solid transparent;
-  border-right: 18px solid transparent;
-  border-bottom: 30px solid #c00000;
-
-  transform-origin: 50% 60%;
 }
 
 /* SMOOTH ROTATION (FIXED JANK) */
