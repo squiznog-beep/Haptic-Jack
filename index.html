@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.12</title>
+<title>Haptic Player v0.13</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -177,7 +177,7 @@ body {
 
 <div id="version">
 Last Functional Build: 0.12<br>
-Current Build: 0.12
+Current Build: 0.13
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -241,10 +241,7 @@ function applyVolume(i) {
 
   const targetVolume = tracks[i].volume ?? 1;
 
-  // native audio element
-  audio.volume = targetVolume;
-
-  // plyr wrapper
+  player.muted = false;
   player.volume = targetVolume;
 }
 
@@ -264,11 +261,10 @@ function playTrack(i) {
 
   renderPlaylist();
 
-  // force volume AFTER source swap settles
-  setTimeout(() => {
+  player.once('loadedmetadata', () => {
     applyVolume(i);
     player.play().catch(()=>{});
-  }, 50);
+  });
 }
 
 player.on("ended", () => {
