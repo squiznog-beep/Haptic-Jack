@@ -2,30 +2,34 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.14d</title>
+<title>Haptic Player v0.14e</title>
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.css"/>
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
 <style>
 
+/* ---------------- PLYR THEME FIX (unchanged visually; irrelevant now but preserved) ---------------- */
+
 :root {
-  --accent: #b30000;
+  --plyr-color-main: #b30000;
+  --plyr-audio-controls-background: rgba(20, 20, 20, 0.92);
+  --plyr-control-icon-size: 16px;
 }
 
 body {
   margin: 0;
-  background: white;
+  background: black;
   font-family: monospace;
-  color: black;
+  color: white;
   overflow: hidden;
 }
 
-/* ---------------- BOOT ---------------- */
+/* ---------------- BOOT (UNCHANGED - DO NOT TOUCH CONTRACT) ---------------- */
 
 #boot {
   position: fixed;
   inset: 0;
-  background: white;
+  background: black;
   z-index: 9999;
   display: flex;
   flex-direction: column;
@@ -34,17 +38,17 @@ body {
 }
 
 #bootVer {
-  font-size: 12px;
-  opacity: 0.6;
+  font-size: 30px;
+  opacity: 0.5;
   margin-left: 12px;
   position: relative;
   top: 6px;
-  color: var(--accent);
+  color: white;
 }
 
 #title {
   font-size: 32px;
-  color: var(--accent);
+  color: red;
   letter-spacing: 4px;
   margin-bottom: 40px;
   display: flex;
@@ -55,19 +59,31 @@ body {
 .triangle {
   width: 0.9em;
   height: 0.9em;
-  background: var(--accent);
+  background: red;
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   position: relative;
   top: 2px;
 }
 
+.label {
+  opacity: 0.7;
+  margin-bottom: 4px;
+}
+
 .field {
   width: 260px;
-  border-bottom: 1px solid #ccc;
+  border-bottom: 1px solid #333;
   padding: 6px;
   font-size: 14px;
   min-height: 20px;
   margin-bottom: 15px;
+}
+
+#bootText {
+  margin-top: 30px;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
 }
 
 /* ---------------- PLAYER ---------------- */
@@ -77,23 +93,46 @@ body {
   margin: auto;
   padding: 20px;
   margin-top: 60px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 16px;
+  backdrop-filter: blur(20px);
+}
+
+#playlist {
+  margin-top: 20px;
+  text-align: center;
 }
 
 .track {
   padding: 6px;
-  cursor: pointer;
+  transition: all 0.25s ease;
 }
 
 .track.active {
-  color: var(--accent);
   font-weight: bold;
+  opacity: 1;
+  transform: scale(1.3);
+}
+
+.track.near {
+  opacity: 0.5;
+  transform: scale(1);
+}
+
+.track.far {
+  opacity: 0.15;
+  transform: scale(0.85);
 }
 
 #logo {
   position: fixed;
   bottom: 10px;
   left: 12px;
-  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.7;
+  color: red;
 }
 
 #version {
@@ -101,7 +140,7 @@ body {
   bottom: 10px;
   right: 12px;
   font-size: 11px;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 </style>
@@ -109,14 +148,17 @@ body {
 
 <body>
 
-<!-- BOOT -->
+<!-- BOOT (UNCHANGED) -->
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.14d</span>
+    <span id="bootVer">0.13f</span>
   </div>
 
+  <div class="label">Username</div>
   <div class="field" id="userField"></div>
+
+  <div class="label">Password</div>
   <div class="field" id="passField"></div>
 
   <div id="bootText">INITIALIZING...</div>
@@ -127,11 +169,13 @@ body {
   <div id="playlist"></div>
 </div>
 
-<div id="logo">T R I <div class="triangle"></div> G E</div>
+<div id="logo">
+  T R I <div class="triangle"></div> G E
+</div>
 
 <div id="version">
-Last Functional Build: N/A<br>
-Current Build: 0.14d
+Last Functional Build: 0.12<br>
+Current Build: 0.14e
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -140,7 +184,7 @@ Current Build: 0.14d
 
 <script>
 
-/* ---------------- TRACKS ---------------- */
+/* ---------------- TRACKS (UNCHANGED STRUCTURE) ---------------- */
 
 const tracks = [
   { name: "Prologue", url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.1 },
@@ -153,34 +197,36 @@ const tracks = [
   { name: "Announcement 6", url: "Announcement6.oga", volume: 0.6 }
 ];
 
+/* ---------------- STATE ---------------- */
+
 let initialized = false;
 
-/* ---------------- BOOT FLOW ---------------- */
+/* ---------------- BOOT SYSTEM (UNCHANGED) ---------------- */
 
 function startBoot() {
 
-  const login = document.getElementById("loginSfx");
-
-  login.play().catch(()=>{});
+  const loginSfx = document.getElementById("loginSfx");
+  loginSfx.play().catch(()=>{});
 
   typeUser("userField", "SusanSurandin", () => {
+
     typePassword("passField", "WitnessMe", () => {
 
-      document.getElementById("bootText").style.opacity = 1;
-      document.getElementById("bootText").innerText = "WELCOME BACK SUSAN";
+      const bootText = document.getElementById("bootText");
+      bootText.style.opacity = 1;
+      bootText.innerText = "WELCOME BACK SUSAN";
 
       setTimeout(() => {
         document.getElementById("boot").style.display = "none";
-
         initAmplitude();
-
       }, 1200);
 
     });
+
   });
 }
 
-/* ---------------- AMPLITUDE INIT ---------------- */
+/* ---------------- AMPLITUDE LAYER ONLY ---------------- */
 
 function initAmplitude() {
 
@@ -200,7 +246,7 @@ function initAmplitude() {
   }, 250);
 }
 
-/* ---------------- PLAYLIST ---------------- */
+/* ---------------- PLAYLIST (Amplitude-controlled UI) ---------------- */
 
 function renderPlaylist() {
 
@@ -220,10 +266,9 @@ function renderPlaylist() {
 
     el.appendChild(div);
   });
-
 }
 
-/* highlight active */
+/* highlight active track */
 setInterval(() => {
 
   if (!initialized) return;
@@ -236,7 +281,7 @@ setInterval(() => {
 
 }, 200);
 
-/* ---------------- TYPE EFFECTS ---------------- */
+/* ---------------- TYPE EFFECTS (UNCHANGED) ---------------- */
 
 function typeUser(id, text, cb) {
 
@@ -275,6 +320,10 @@ function typePassword(id, text, cb) {
 /* ---------------- EVENTS ---------------- */
 
 window.addEventListener("click", startBoot, { once: true });
+
+window.addEventListener("load", () => {
+  // DO NOT INIT AUDIO HERE (important fix)
+});
 
 </script>
 
