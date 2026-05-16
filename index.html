@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.13d</title>
+<title>Haptic Player v0.13e</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -36,6 +36,7 @@ body {
   color: white;
   overflow: hidden;
 }
+
 /* ---------------- BOOT ---------------- */
 
 #boot {
@@ -162,7 +163,7 @@ body {
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.13d</span>
+    <span id="bootVer">0.13e</span>
   </div>
 
   <div class="label">Username</div>
@@ -186,7 +187,7 @@ body {
 
 <div id="version">
 Last Functional Build: 0.12<br>
-Current Build: 0.13d
+Current Build: 0.13e
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -214,24 +215,23 @@ const loginSfx = document.getElementById("loginSfx");
 
 let currentTrack = 0;
 
+/* ---------------- iOS DETECTION ---------------- */
+
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
 /* ---------------- PLYR ---------------- */
 
 const player = new Plyr(audio, {
   controls: ['play', 'progress', 'current-time', 'mute', 'volume'],
-  volume: 0.5   // prevent hard reset to 1 internally
+  volume: 0.5
 });
 
-let ctx, sourceNode, gainNode;
+/* ---------------- VOLUME SYSTEM (FIXED) ---------------- */
 
-if (isIOS) {
-  ctx = new (window.AudioContext || window.webkitAudioContext)();
-  sourceNode = ctx.createMediaElementSource(audio);
-  gainNode = ctx.createGain();
-
-  sourceNode.connect(gainNode);
-  gainNode.connect(ctx.destination);
+function applyVolume(v) {
+  player.muted = false;
+  player.volume = v;
+  player.media.volume = v;
 }
 
 /* ---------------- PLAYLIST ---------------- */
@@ -275,30 +275,10 @@ function playTrack(i) {
   renderPlaylist();
 
   player.once('loadedmetadata', () => {
-    if (isIOS && ctx && audio) {
-  try {
-    sourceNode.disconnect();
-  } catch(e) {}
-
-  sourceNode = ctx.createMediaElementSource(audio);
-  sourceNode.connect(gainNode);
-  gainNode.connect(ctx.destination);
-}
 
     const v = tracks[i].volume ?? 1;
 
-    player.muted = false;
-
-  if (isIOS && gainNode) {
-  gainNode.gain.value = v;
-} else {
-  player.media.volume = v;
-  player.volume = v;
-
-  setTimeout(() => {
-    player.volume = v;
-  }, 0);
-}
+    applyVolume(v);
 
     player.play().catch(()=>{});
   });
@@ -356,7 +336,7 @@ function startBoot() {
 
   setTimeout(() => {
     loginSfx.play().catch(()=>{});
-  }, 1600);
+  }, 1400);
 
   typeUser(u, "SusanSurandin", () => {
 
