@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.13c</title>
+<title>Haptic Player v0.13d</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -162,7 +162,7 @@ body {
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.13c</span>
+    <span id="bootVer">0.13d</span>
   </div>
 
   <div class="label">Username</div>
@@ -186,7 +186,7 @@ body {
 
 <div id="version">
 Last Functional Build: 0.12<br>
-Current Build: 0.13c
+Current Build: 0.13d
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -194,6 +194,22 @@ Current Build: 0.13c
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
+
+/* ---------------- IOS DETECTION + AUDIO ROUTING ---------------- */
+
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
+const audio = document.getElementById("player");
+
+let ctx, sourceNode, gainNode;
+
+if (isIOS) {
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  sourceNode = ctx.createMediaElementSource(audio);
+  gainNode = ctx.createGain();
+  sourceNode.connect(gainNode);
+  gainNode.connect(ctx.destination);
+}
 
 /* ---------------- TRACKS ---------------- */
 
@@ -208,7 +224,6 @@ const tracks = [
   { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg", volume: 0.6 }
 ];
 
-const audio = document.getElementById("player");
 const playlistEl = document.getElementById("playlist");
 const loginSfx = document.getElementById("loginSfx");
 
@@ -218,7 +233,7 @@ let currentTrack = 0;
 
 const player = new Plyr(audio, {
   controls: ['play', 'progress', 'current-time', 'mute', 'volume'],
-  volume: 0.5   // prevent hard reset to 1 internally
+  volume: 0.5
 });
 
 /* ---------------- PLAYLIST ---------------- */
@@ -265,16 +280,12 @@ function playTrack(i) {
 
     const v = tracks[i].volume ?? 1;
 
-    player.muted = false;
-
-    // hard sync both layers
-    player.media.volume = v;
-    player.volume = v;
-
-    // force UI refresh tick (this is the missing piece)
-    setTimeout(() => {
+    if (isIOS && gainNode) {
+      gainNode.gain.value = v;
+    } else {
+      player.media.volume = v;
       player.volume = v;
-    }, 0);
+    }
 
     player.play().catch(()=>{});
   });
@@ -286,35 +297,6 @@ player.on("ended", () => {
   }
 });
 
-/* ---------------- PASSWORD ---------------- */
-
-async function typePassword(el, text) {
-
-  let masked = "";
-
-  for (let i = 0; i < text.length; i++) {
-    el.innerText = masked + text[i];
-    await new Promise(r => setTimeout(r, 100));
-    masked += "*";
-    el.innerText = masked;
-  }
-}
-
-function typeUser(el, text, cb) {
-
-  let i = 0;
-
-  function step() {
-    if (i <= text.length) {
-      el.innerText = text.slice(0, i);
-      i++;
-      setTimeout(step, 40);
-    } else cb();
-  }
-
-  step();
-}
-
 /* ---------------- BOOT ---------------- */
 
 function startBoot() {
@@ -323,12 +305,12 @@ function startBoot() {
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const source = ctx.createMediaElementSource(loginSfx);
-  const gain = ctx.createGain();
+  const ctx2 = new (window.AudioContext || window.webkitAudioContext)();
+  const source = ctx2.createMediaElementSource(loginSfx);
+  const gain = ctx2.createGain();
   gain.gain.value = 1.1;
   source.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(ctx2.destination);
 
   setTimeout(() => {
     loginSfx.play().catch(()=>{});
