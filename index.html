@@ -2,11 +2,9 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE v0.16.3</title>
+<title>TRI▲GE v0.16.3 FIX</title>
 
 <style>
-
-/* ---------------- BASE ---------------- */
 
 body {
   margin: 0;
@@ -33,44 +31,27 @@ body {
   transition: opacity 0.6s ease;
 }
 
-/* FIXED HEADER CENTERING */
 #title {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   letter-spacing: 12px;
-transform: translateX(calc(1% + 4px));
+  transform: translateX(calc(1% + 4px));
 
   color: #b938948;
   font-size: 40px;
 }
 
-#title span {
-  margin-right: 16px;
-}
-
-#title span:nth-child(3) {
-  margin-right: 8px;
-}
-
-/* TRIANGLE OPTICAL SPACING FIX */
 .triangle {
   width: 0;
   height: 0;
-
   border-left: 14px solid transparent;
   border-right: 14px solid transparent;
   border-bottom: 24px solid #c00000;
-
-  margin-left: 10px;
-  margin-right: 18px;
 }
 
-#bootVer {
-  margin-top: 10px;
-  font-size: 13px;
-}
+#bootVer { margin-top: 10px; font-size: 13px; }
 
 .field {
   width: 260px;
@@ -80,7 +61,6 @@ transform: translateX(calc(1% + 4px));
   min-height: 18px;
 }
 
-/* WAKE UP TEXT */
 #bootText {
   margin-top: 28px;
   color: #4a90ff;
@@ -89,30 +69,19 @@ transform: translateX(calc(1% + 4px));
 }
 
 @keyframes pulse {
-
-  0%   { opacity: 0; }
-  25%  { opacity: 0.85; }
-  55%  { opacity: 0.85; }
+  0% { opacity: 0; }
+  25% { opacity: 0.85; }
+  55% { opacity: 0.85; }
   100% { opacity: 0; }
-
 }
 
 /* ---------------- PLAYER ---------------- */
 
 #wrapper {
   height: 100vh;
-
   display: none;
   justify-content: center;
   align-items: center;
-}
-
-#floatingPlay {
-  position: absolute;
-  left: calc(40%+100px+50px); /* 20% visual offset */
-  top: 41%;
-  transform: translateY(-50%);
-  cursor: pointer;
 }
 
 #panel {
@@ -123,26 +92,19 @@ transform: translateX(calc(1% + 4px));
 /* ---------------- PLAYLIST ---------------- */
 
 #playlist {
-
   height: 180px;
-
   display: flex;
   flex-direction: column;
   justify-content: center;
-
   overflow: hidden;
   font-size: 16px;
 }
 
 .track {
-  padding: 6px;
-
+  height: 34px;
   display: flex;
   align-items: center;
   justify-content: center;
-
-  gap: 5px;
-
   transition: all 0.25s ease;
   cursor: pointer;
 }
@@ -153,39 +115,15 @@ transform: translateX(calc(1% + 4px));
   transform: scale(1.25);
 }
 
-.track.near {
-  opacity: 0.55;
-}
+.track.near { opacity: 0.55; }
+.track.far { opacity: 0.2; transform: scale(0.88); }
 
-.track.far {
-  opacity: 0.2;
-  transform: scale(0.88);
-}
+/* ---------------- SINGLE PLAY TRIANGLE ---------------- */
 
-/* ---------------- CONTROLS ---------------- */
-
-#controls {
-  margin-top: 18px;
-}
-
-/* ---------------- PLAY BUTTON ---------------- */
-
-#transport {
-  margin-bottom: 20px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#playPause {
-  border: none;
-  background: transparent;
-  cursor: pointer;
-}
-
-/* base triangle */
-.playTriangle {
-
+#playAlign {
+  position: fixed;
+  left: calc(50% - 260px - 90px);
+  top: 0;
   width: 0;
   height: 0;
 
@@ -193,20 +131,17 @@ transform: translateX(calc(1% + 4px));
   border-right: 18px solid transparent;
   border-bottom: 30px solid #c00000;
 
-  transform-origin: 50% 60%;
+  transform-origin: center;
+  cursor: pointer;
 }
 
-/* SMOOTH ROTATION (FIXED JANK) */
-.playTriangle.spinning {
-  animation: smoothSpin 4s linear infinite;
+#playAlign.spinning {
+  animation: spin 3.8s linear infinite;
 }
 
-@keyframes smoothSpin {
-  0%   { transform: rotate(0deg) scale(1); }
-  25%  { transform: rotate(90deg) scale(1.02); }
-  50%  { transform: rotate(180deg) scale(1); }
-  75%  { transform: rotate(270deg) scale(1.02); }
-  100% { transform: rotate(360deg) scale(1); }
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 /* ---------------- PROGRESS ---------------- */
@@ -216,7 +151,6 @@ transform: translateX(calc(1% + 4px));
   height: 6px;
   background: #eee;
   cursor: pointer;
-  position: relative;
 }
 
 #progressBar {
@@ -236,28 +170,6 @@ input[type=range] {
   accent-color: #c00000;
 }
 
-/* ---------------- CORNER LOGO ---------------- */
-
-#cornerLogo {
-  position: fixed;
-  bottom: 10px;
-  left: 12px;
-
-  display: flex;
-  align-items: center;
-
-  color: #c00000;
-  opacity: 0.75;
-
-  letter-spacing: 4px;
-}
-
-.smallTri {
-  transform: scale(0.6);
-  margin-left: 4px;
-  margin-right: 10px;
-}
-
 /* ---------------- VERSION ---------------- */
 
 #version {
@@ -273,149 +185,67 @@ input[type=range] {
 
 <body>
 
-<!-- BOOT -->
 <div id="boot">
-
   <div id="title">
-    <span>T</span>
-    <span>R</span>
-    <span>I</span>
-
+    <span>T</span><span>R</span><span>I</span>
     <div class="triangle"></div>
-
-    <span>G</span>
-    <span>E</span>
+    <span>G</span><span>E</span>
   </div>
 
   <div id="bootVer">v0.16.3</div>
-
   <div class="field" id="userField"></div>
   <div class="field" id="passField"></div>
-
   <div id="bootText">Wake up -U</div>
-
 </div>
 
-<!-- PLAYER -->
 <div id="wrapper">
 
-  <div id="floatingPlay" class="playTriangle"></div>
-  
-  <div id="panel">
+  <!-- SINGLE CONTROL TRIANGLE -->
+  <div id="playAlign"></div>
 
+  <div id="panel">
     <div id="playlist"></div>
 
-    <div id="controls">
-
-      <div id="transport">
-        <button id="playPause">
-          <div class="playTriangle" id="playIcon"></div>
-        </button>
-      </div>
-
-      <div id="progressContainer">
-        <div id="progressBar"></div>
-      </div>
-
-      <div id="volumeWrap">
-        <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
-      </div>
-
+    <div id="progressContainer">
+      <div id="progressBar"></div>
     </div>
 
+    <div id="volumeWrap">
+      <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+    </div>
   </div>
-
 </div>
 
-<div id="cornerLogo">
-  T R I <div class="triangle smallTri"></div> G E
-</div>
-
-<div id="version">
-Last Functional Build: N/A<br>
-Current Build: 0.16.3
-</div>
+<div id="version">Current Build: 0.16.3 FIX</div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
 
 <script>
 
-/* ---------------- TRACK DATA ---------------- */
-
 const tracks = [
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.10 },
-  { title: "Announcement 1", file: "Announcement1.oga", volume: 0.60 },
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.1 },
+  { title: "Announcement 1", file: "Announcement1.oga", volume: 0.6 },
   { title: "Control Yourself", file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", volume: 0.05 },
-  { title: "Stability", file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume: 0.05 },
-  { title: "Announcement 2", file: "Announcement2.oga", volume: 0.60 },
-  { title: "Announcement 3", file: "Announcement3.oga", volume: 0.60 },
-  { title: "Announcement 4", file: "Announcement4.oga", volume: 0.60 },
-  { title: "Announcement 6", file: "Announcement6.oga", volume: 0.60 }
+  { title: "Stability", file: "Stability.mp3", volume: 0.05 },
+  { title: "Announcement 2", file: "Announcement2.oga", volume: 0.6 },
 ];
 
-/* ---------------- STATE ---------------- */
-
 let currentTrack = 0;
-let sound = null;
+let sound;
 let globalVolume = 1;
 
-/* ---------------- ELEMENTS ---------------- */
-
-const wrapper = document.getElementById("wrapper");
 const playlist = document.getElementById("playlist");
+const playAlign = document.getElementById("playAlign");
 
-const progressBar = document.getElementById("progressBar");
-const progressContainer = document.getElementById("progressContainer");
+function updatePlayPosition() {
+  const baseHeight = 34;
+  const centerIndex = 2;
+  const offset = (currentTrack - centerIndex) * baseHeight;
 
-const volumeSlider = document.getElementById("volumeSlider");
-
-const playPause = document.getElementById("playPause");
-const playIcon = document.getElementById("playIcon");
-
-const floatingPlay = document.getElementById("floatingPlay");
-
-floatingPlay.addEventListener("click", () => {
-
-  if (!sound) return;
-
-  if (sound.playing()) {
-    sound.pause();
-  } else {
-    sound.play();
-  }
-
-  updatePlayButton();
-});
-
-/* ---------------- AUDIO ---------------- */
-
-function applyVolume() {
-
-  if (!sound) return;
-
-  const actual = tracks[currentTrack].volume * globalVolume;
-
-  sound.volume(actual);
-
-  // iOS FIX
-  if (sound._sounds && sound._sounds[0] && sound._sounds[0]._node) {
-    sound._sounds[0]._node.volume = actual;
-  }
-}
-
-function updatePlayButton() {
-
-  const icon = document.getElementById("floatingPlay");
-
-  if (!sound || !sound.playing()) {
-    icon.classList.remove("spinning");
-  } else {
-    icon.classList.add("spinning");
-  }
+  playAlign.style.top = `calc(50% + ${offset}px - 15px)`;
 }
 
 function playTrack(i) {
-
   currentTrack = i;
 
   if (sound) sound.unload();
@@ -423,166 +253,38 @@ function playTrack(i) {
   sound = new Howl({
     src: [tracks[i].file],
     html5: true,
-    volume: tracks[i].volume * globalVolume,
-
-    onplay: updatePlayButton,
-    onpause: updatePlayButton,
-
-    onend: () => {
-      updatePlayButton();
-      if (currentTrack + 1 < tracks.length) playTrack(currentTrack + 1);
-    }
+    volume: tracks[i].volume * globalVolume
   });
 
   sound.play();
-  renderPlaylist();
+  render();
+  updatePlayPosition();
 }
 
-/* ---------------- PLAYLIST ---------------- */
-
-function renderPlaylist() {
-
+function render() {
   playlist.innerHTML = "";
 
-  for (let i = 0; i < tracks.length; i++) {
-
-    const distance = i - currentTrack;
-    if (Math.abs(distance) > 2) continue;
-
+  tracks.forEach((t, i) => {
     const div = document.createElement("div");
-    div.classList.add("track");
-
-    if (distance === 0) {
-
-      div.classList.add("active");
-
-      
-    }
-    else if (Math.abs(distance) === 1) div.classList.add("near");
-    else div.classList.add("far");
-
-    div.appendChild(document.createTextNode(tracks[i].title));
-
+    div.className = "track" + (i === currentTrack ? " active" : "");
+    div.textContent = t.title;
     div.onclick = () => playTrack(i);
-
     playlist.appendChild(div);
-  }
+  });
 }
 
-/* ---------------- PROGRESS ---------------- */
-
-function updateProgress() {
-
-  if (!sound) {
-    requestAnimationFrame(updateProgress);
-    return;
-  }
-
-  const seek = sound.seek() || 0;
-  const duration = sound.duration() || 1;
-
-  progressBar.style.width = (seek / duration) * 100 + "%";
-
-  requestAnimationFrame(updateProgress);
-}
-
-progressContainer.onclick = (e) => {
-
+playAlign.onclick = () => {
   if (!sound) return;
-
-  const rect = progressContainer.getBoundingClientRect();
-  const ratio = (e.clientX - rect.left) / rect.width;
-
-  sound.seek(ratio * sound.duration());
+  sound.playing() ? sound.pause() : sound.play();
 };
 
-/* ---------------- VOLUME ---------------- */
-
-volumeSlider.addEventListener("input", (e) => {
-
+document.getElementById("volumeSlider").oninput = (e) => {
   globalVolume = parseFloat(e.target.value);
-  applyVolume();
-});
+  if (sound) sound.volume(tracks[currentTrack].volume * globalVolume);
+};
 
-/* ---------------- TYPE ---------------- */
-
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
-}
-
-async function typeUser(text) {
-  const el = document.getElementById("userField");
-  for (let i = 0; i <= text.length; i++) {
-    el.innerText = text.slice(0, i);
-    await sleep(40);
-  }
-}
-
-async function typePassword(text) {
-  const el = document.getElementById("passField");
-
-  let masked = "";
-
-  for (let i = 0; i < text.length; i++) {
-    el.innerText = masked + text[i];
-    await sleep(40);
-    masked += "*";
-    el.innerText = masked;
-    await sleep(40);
-  }
-}
-
-/* ---------------- BOOT ---------------- */
-
-async function bootSequence() {
-
-  const boot = document.getElementById("boot");
-  const bootText = document.getElementById("bootText");
-
-  await sleep(300);
-
-  await typeUser("SusanSurandin");
-  await sleep(200);
-
-  await typePassword("WitnessMe");
-  await sleep(500);
-
-  bootText.innerText = "INITIALIZING AUDIO SUBSYSTEM";
-  bootText.style.color = "#c00000";
-
-  await sleep(900);
-
-  bootText.innerText = "WELCOME BACK SUSAN";
-
-  await sleep(800);
-
-  boot.style.opacity = 0;
-  await sleep(600);
-
-  boot.style.display = "none";
-  wrapper.style.display = "flex";
-
-  renderPlaylist();
-  playTrack(0);
-  updateProgress();
-}
-
-/* ---------------- IOS INIT ---------------- */
-
-let started = false;
-
-async function startExperience() {
-
-  if (started) return;
-  started = true;
-
-  try { await Howler.ctx.resume(); } catch(e) {}
-
-  bootSequence();
-}
-
-document.getElementById("boot")
-.addEventListener("pointerdown", startExperience);
+render();
+playTrack(0);
 
 </script>
 
