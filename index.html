@@ -2,34 +2,43 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE v0.14i</title>
+<title>TRI▲GE v0.15</title>
+
+<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
 <style>
+
+/* ---------------- BASE ---------------- */
+
 body {
   margin: 0;
   background: white;
   font-family: monospace;
+  color: black;
+  overflow: hidden;
 }
 
-/* ---------------- BOOT ---------------- */
+/* ---------------- BOOT CINEMATIC ---------------- */
 
 #boot {
   position: fixed;
   inset: 0;
+  background: white;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   cursor: pointer;
-  background: white;
+  z-index: 9999;
 }
 
 #title {
-  font-size: 48px;
-  letter-spacing: 8px;
+  font-size: 42px;
+  letter-spacing: 6px;
   color: #c00000;
   display: flex;
   align-items: center;
+  gap: 8px;
 }
 
 .triangle {
@@ -38,159 +47,257 @@ body {
   border-left: 14px solid transparent;
   border-right: 14px solid transparent;
   border-bottom: 24px solid #c00000;
-  margin: 0 6px;
 }
 
 #bootVer {
   margin-top: 10px;
-  color: black;
   font-size: 14px;
 }
 
-#state {
-  margin-top: 20px;
-  color: black;
+#bootText {
+  margin-top: 30px;
+  font-size: 16px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
-/* ---------------- LOGIN ---------------- */
+/* login illusion fields (NOT REAL SCREENS) */
 
-#login {
-  display: none;
-  position: fixed;
-  inset: 0;
-  background: white;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
+#ghost {
+  margin-top: 30px;
+  width: 260px;
 }
 
 .field {
-  width: 260px;
-  border-bottom: 1px solid #ccc;
-  margin: 10px;
+  border-bottom: 1px solid #ddd;
   padding: 6px;
+  min-height: 20px;
+  margin: 10px 0;
 }
 
 /* ---------------- PLAYER ---------------- */
 
-#player {
-  display: none;
+.wrapper {
+  max-width: 520px;
+  margin: 60px auto;
   padding: 20px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 14px;
+  backdrop-filter: blur(18px);
+
+  display: none; /* revealed after boot */
 }
 
 .track {
   padding: 6px;
   cursor: pointer;
-  color: black;
+  transition: 0.2s ease;
 }
 
 .track.active {
   color: #c00000;
   font-weight: bold;
+  transform: scale(1.2);
 }
+
+.track.near {
+  opacity: 0.6;
+}
+
+.track.far {
+  opacity: 0.2;
+  transform: scale(0.9);
+}
+
+/* ---------------- FOOT ---------------- */
+
+#version {
+  position: fixed;
+  bottom: 10px;
+  right: 12px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
 </style>
 </head>
 
 <body>
 
-<!-- BOOT -->
+<!-- BOOT CINEMATIC -->
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
   </div>
-  <div id="bootVer">0.14i</div>
-  <div id="state">CLICK TO INITIALIZE</div>
-</div>
 
-<!-- LOGIN -->
-<div id="login">
-  <div class="field" id="user">USERNAME</div>
-  <div class="field" id="pass">PASSWORD</div>
+  <div id="bootVer">v0.15</div>
+
+  <div id="ghost">
+    <div class="field" id="userField"></div>
+    <div class="field" id="passField"></div>
+  </div>
+
+  <div id="bootText">CLICK TO INITIALIZE</div>
 </div>
 
 <!-- PLAYER -->
-<div id="player">
-  <div class="track" onclick="playTrack(0)">Prologue</div>
-  <div class="track" onclick="playTrack(1)">Announcement 1</div>
+<div class="wrapper" id="playerWrap">
+  <audio id="player" playsinline></audio>
+  <div id="playlist"></div>
 </div>
 
-<audio id="audio"></audio>
-<audio id="loginSfx" src="Notes5.oga"></audio>
+<div id="version">
+Last Functional Build: N/A<br>
+Current Build: 0.15
+</div>
+
+<audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
+
+<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
 <script>
-const boot = document.getElementById("boot");
-const login = document.getElementById("login");
-const player = document.getElementById("player");
-const state = document.getElementById("state");
+
+/* ---------------- TRACK DATA ---------------- */
+
+const tracks = [
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3", volume: 0.1 },
+  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Control Yourself", file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", type: "audio/flac", volume: 0.05 },
+  { title: "Stability", file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", type: "audio/mp3", volume: 0.05 },
+  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg", volume: 0.6 }
+];
+
+const audio = document.getElementById("player");
+const playlistEl = document.getElementById("playlist");
 const loginSfx = document.getElementById("loginSfx");
-const audio = document.getElementById("audio");
+const wrapper = document.getElementById("playerWrap");
 
-let stage = 0;
+let currentTrack = 0;
 
-/* ---------------- BOOT ---------------- */
+/* ---------------- PLYR ---------------- */
 
-boot.onclick = () => {
+const player = new Plyr(audio, {
+  controls: ['play', 'progress', 'current-time', 'mute', 'volume'],
+  volume: 0.5
+});
 
-  if (stage !== 0) return;
-  stage = 1;
+/* ---------------- PLAYLIST ---------------- */
 
-  state.innerText = "INITIALIZING...";
+function renderPlaylist() {
+  playlistEl.innerHTML = "";
 
-  setTimeout(() => {
-    loginSfx.play();
-    boot.style.display = "none";
-    login.style.display = "flex";
-  }, 600);
+  for (let i = 0; i < tracks.length; i++) {
 
-  setTimeout(() => {
-    typeLogin();
-  }, 900);
-};
+    const distance = i - currentTrack;
+    if (Math.abs(distance) > 2) continue;
 
-/* ---------------- LOGIN TYPE ---------------- */
+    const el = document.createElement("div");
+    el.className = "track";
+    el.innerText = tracks[i].title;
 
-function typeLogin() {
-  const u = document.getElementById("user");
-  const p = document.getElementById("pass");
+    if (distance === 0) el.classList.add("active");
+    else if (Math.abs(distance) === 1) el.classList.add("near");
+    else el.classList.add("far");
 
-  let user = "SusanSurandin";
-  let pass = "WitnessMe";
-
-  let i = 0;
-  let j = 0;
-
-  let userInterval = setInterval(() => {
-    u.innerText = user.slice(0, i++);
-    if (i > user.length) {
-      clearInterval(userInterval);
-
-      let passInterval = setInterval(() => {
-        p.innerText = pass.slice(0, j++);
-        if (j > pass.length) {
-          clearInterval(passInterval);
-
-          setTimeout(() => {
-            login.style.display = "none";
-            player.style.display = "block";
-            stage = 2;
-          }, 600);
-        }
-      }, 80);
-    }
-  }, 60);
+    el.onclick = () => playTrack(i);
+    playlistEl.appendChild(el);
+  }
 }
 
 /* ---------------- AUDIO ---------------- */
 
-const tracks = [
-  "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3",
-  "Announcement1.oga"
-];
-
 function playTrack(i) {
-  audio.src = tracks[i];
-  audio.play();
+  currentTrack = i;
+
+  const v = tracks[i].volume ?? 1;
+
+  audio.volume = v;
+  player.volume = v;
+
+  player.source = {
+    type: 'audio',
+    sources: [{
+      src: tracks[i].file,
+      type: tracks[i].type
+    }]
+  };
+
+  renderPlaylist();
+
+  player.once('loadedmetadata', () => {
+    player.play().catch(()=>{});
+  });
 }
+
+/* ---------------- BOOT CINEMATIC ---------------- */
+
+function sleep(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+async function type(el, text, speed = 40) {
+  el.innerText = "";
+  for (let i = 0; i <= text.length; i++) {
+    el.innerText = text.slice(0, i);
+    await sleep(speed);
+  }
+}
+
+async function bootSequence() {
+
+  const u = document.getElementById("userField");
+  const p = document.getElementById("passField");
+  const bootText = document.getElementById("bootText");
+
+  /* iOS unlock */
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const source = ctx.createMediaElementSource(loginSfx);
+  const gain = ctx.createGain();
+  gain.gain.value = 1.1;
+  source.connect(gain);
+  gain.connect(ctx.destination);
+
+  loginSfx.play().catch(()=>{});
+
+  /* cinematic sequence */
+
+  bootText.style.opacity = 1;
+
+  await sleep(500);
+  await type(u, "SusanSurandin", 45);
+
+  await sleep(200);
+  await type(p, "WitnessMe", 55);
+
+  await sleep(400);
+  bootText.innerText = "INITIALIZING AUDIO SUBSYSTEM";
+
+  await sleep(900);
+  bootText.innerText = "WELCOME BACK SUSAN";
+
+  await sleep(800);
+
+  /* transition */
+
+  document.getElementById("boot").style.opacity = 0;
+  document.getElementById("boot").style.transition = "opacity 0.6s ease";
+
+  await sleep(600);
+
+  document.getElementById("boot").style.display = "none";
+  wrapper.style.display = "block";
+
+  renderPlaylist();
+  playTrack(0);
+}
+
+/* ---------------- INIT ---------------- */
+
+window.addEventListener("click", bootSequence, { once: true });
+
 </script>
 
 </body>
