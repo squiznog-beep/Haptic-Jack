@@ -594,27 +594,24 @@ async function bootSequence() {
 
 /* ---------------- IOS INIT FIX ---------------- */
 
-async function startExperience(e) {
+let started = false;
 
-  e.preventDefault();
+async function startExperience() {
 
-  await Howler.ctx.resume();
+  if (started) return;
+  started = true;
+
+  try {
+    await Howler.ctx.resume();
+  } catch(e) {}
 
   bootSequence();
 }
 
 document.getElementById("boot")
 .addEventListener(
-  "touchend",
-  startExperience,
-  { once: true }
-);
-
-document.getElementById("boot")
-.addEventListener(
-  "click",
-  startExperience,
-  { once: true }
+  "pointerdown",
+  startExperience
 );
 
 </script>
