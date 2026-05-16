@@ -8,8 +8,6 @@
 
 <style>
 
-/* ---------------- THEME (WHITE + RED TEST MODE) ---------------- */
-
 :root {
   --accent: #b30000;
 }
@@ -63,11 +61,6 @@ body {
   top: 2px;
 }
 
-.label {
-  opacity: 0.7;
-  margin-bottom: 4px;
-}
-
 .field {
   width: 260px;
   border-bottom: 1px solid #ccc;
@@ -84,40 +77,23 @@ body {
   margin: auto;
   padding: 20px;
   margin-top: 60px;
-  background: rgba(0,0,0,0.03);
-  border-radius: 16px;
-  backdrop-filter: blur(20px);
 }
 
 .track {
   padding: 6px;
-  transition: all 0.25s ease;
   cursor: pointer;
 }
 
 .track.active {
-  font-weight: bold;
   color: var(--accent);
-  transform: scale(1.2);
-}
-
-.track.near {
-  opacity: 0.6;
-}
-
-.track.far {
-  opacity: 0.2;
+  font-weight: bold;
 }
 
 #logo {
   position: fixed;
   bottom: 10px;
   left: 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
   color: var(--accent);
-  opacity: 0.8;
 }
 
 #version {
@@ -128,40 +104,28 @@ body {
   opacity: 0.6;
 }
 
-/* hide amplitude default UI */
-.amplitude-player {
-  display: none;
-}
-
 </style>
 </head>
 
 <body>
 
-<!-- BOOT -->
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
     <span id="bootVer">0.14a</span>
   </div>
 
-  <div class="label">Username</div>
   <div class="field" id="userField"></div>
-
-  <div class="label">Password</div>
   <div class="field" id="passField"></div>
 
   <div id="bootText">INITIALIZING...</div>
 </div>
 
-<!-- PLAYER -->
 <div class="wrapper">
   <div id="playlist"></div>
 </div>
 
-<div id="logo">
-  T R I <div class="triangle"></div> G E
-</div>
+<div id="logo">T R I <div class="triangle"></div> G E</div>
 
 <div id="version">
 Last Functional Build: 0.12<br>
@@ -170,7 +134,6 @@ Current Build: 0.14a
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
 
-<!-- AMPLITUDE -->
 <script src="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.js"></script>
 
 <script>
@@ -190,96 +153,66 @@ const tracks = [
 
 /* ---------------- AMPLITUDE INIT ---------------- */
 
-Amplitude.init({
-  songs: tracks,
-  volume: 0.5
-});
+function initPlayer() {
+
+  Amplitude.init({
+    songs: tracks,
+    volume: 0.5
+  });
+
+}
 
 /* ---------------- PLAYLIST ---------------- */
 
-const playlistEl = document.getElementById("playlist");
-
 function renderPlaylist() {
-  playlistEl.innerHTML = "";
+
+  const el = document.getElementById("playlist");
+  el.innerHTML = "";
 
   tracks.forEach((t, i) => {
-    const el = document.createElement("div");
-    el.className = "track";
-    el.innerText = t.name;
+    const d = document.createElement("div");
+    d.className = "track";
+    d.innerText = t.name;
 
-    el.onclick = () => {
+    d.onclick = () => {
       Amplitude.playSongAtIndex(i);
     };
 
-    playlistEl.appendChild(el);
+    el.appendChild(d);
   });
+
 }
 
-/* highlight active track */
+/* highlight active */
 setInterval(() => {
-  const index = Amplitude.getActiveIndex();
+  const idx = Amplitude.getActiveIndex();
 
-  document.querySelectorAll(".track").forEach((el, i) => {
-    el.classList.remove("active");
-
-    if (i === index) {
-      el.classList.add("active");
-    }
+  document.querySelectorAll(".track").forEach((t, i) => {
+    t.classList.toggle("active", i === idx);
   });
+
 }, 200);
 
-/* ---------------- BOOT (UNCHANGED LOGIC) ---------------- */
-
-async function typePassword(el, text) {
-  let masked = "";
-
-  for (let i = 0; i < text.length; i++) {
-    el.innerText = masked + text[i];
-    await new Promise(r => setTimeout(r, 100));
-    masked += "*";
-    el.innerText = masked;
-  }
-}
-
-function typeUser(el, text, cb) {
-  let i = 0;
-
-  function step() {
-    if (i <= text.length) {
-      el.innerText = text.slice(0, i);
-      i++;
-      setTimeout(step, 40);
-    } else cb();
-  }
-
-  step();
-}
+/* ---------------- BOOT ---------------- */
 
 function startBoot() {
 
-  const u = document.getElementById("userField");
-  const p = document.getElementById("passField");
-  const bootText = document.getElementById("bootText");
+  document.getElementById("loginSfx").play().catch(()=>{});
 
   setTimeout(() => {
-    document.getElementById("loginSfx").play().catch(()=>{});
+
+    document.getElementById("boot").style.display = "none";
+
+    initPlayer();
+    renderPlaylist();
+
+    /* CRITICAL FIX:
+       force first playable state */
+    setTimeout(() => {
+      Amplitude.playSongAtIndex(0);
+    }, 200);
+
   }, 1600);
-
-  typeUser(u, "SusanSurandin", () => {
-
-    typePassword(p, "WitnessMe").then(() => {
-
-      bootText.style.opacity = 1;
-      bootText.innerText = "WELCOME BACK SUSAN";
-
-      setTimeout(() => {
-        document.getElementById("boot").style.display = "none";
-        renderPlaylist();
-      }, 1500);
-
-    });
-
-  });
 }
 
 window.addEventListener("click", startBoot, { once: true });
