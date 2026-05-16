@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE v0.17.3</title>
+<title>TRI▲GE v0.18</title>
 
 <style>
 
@@ -112,7 +112,7 @@ transform: translateX(calc(1% + 4px));
 
 #floatingPlay {
   position: absolute;
-  left: =5px;   /* stable offset from panel */
+  left: 15px;   /* stable offset from panel */
   top: 28%;
   transform: translateY(-50%);
 }
@@ -129,14 +129,16 @@ transform: translateX(calc(1% + 4px));
   display: flex;
   flex-direction: column;
   justify-content: center;
+  align-items: center;
 
   overflow: visible; /* IMPORTANT FIX */
   font-size: 16px;
 }
 
 .track {
+  width: fit-content;
+  
   padding: 6px;
-
   transform-origin: center;
   
   display: flex;
@@ -289,7 +291,7 @@ input[type=range] {
     <span>E</span>
   </div>
 
-  <div id="bootVer">v0.17.3</div>
+  <div id="bootVer">v0.18</div>
 
   <div class="field" id="userField"></div>
   <div class="field" id="passField"></div>
@@ -339,7 +341,7 @@ input[type=range] {
 
 <div id="version">
 Last Functional Build: N/A<br>
-Current Build: 0.17.3
+Current Build: 0.18
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
@@ -472,9 +474,6 @@ function renderPlaylist() {
     playlist.appendChild(div);
   }
 }
-
-floatingPlay.addEventListener("click", togglePlay);
-
 /* ---------------- PROGRESS ---------------- */
 
 function updateProgress() {
