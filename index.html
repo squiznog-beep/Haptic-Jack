@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE v0.17</title>
+<title>TRI▲GE v0.17.1</title>
 
 <style>
 
@@ -102,10 +102,8 @@ transform: translateX(calc(1% + 4px));
 #wrapper {
   height: 100vh;
   display: none;
-
   justify-content: center;
   align-items: center;
-  position: relative;
 }
 
 #layout {
@@ -116,10 +114,11 @@ transform: translateX(calc(1% + 4px));
 }
 
 #floatingPlay {
-  position: relative;
-  left: -120px; /* ≈ “15% visual offset” in stable terms */
+  position: absolute;
+  left: calc(50% - 260px); /* shifts it left of centered panel */
+  top: 50%;
+  transform: translateY(-50%);
   cursor: pointer;
-  z-index: 10;
 }
 
 #panel {
@@ -130,20 +129,20 @@ transform: translateX(calc(1% + 4px));
 /* ---------------- PLAYLIST ---------------- */
 
 #playlist {
-
   height: 180px;
-
   display: flex;
   flex-direction: column;
   justify-content: center;
 
-  overflow: hidden;
+  overflow: visible; /* IMPORTANT FIX */
   font-size: 16px;
 }
 
 .track {
   padding: 6px;
 
+  transform-origin: center;
+  
   display: flex;
   align-items: center;
   justify-content: center;
@@ -157,7 +156,7 @@ transform: translateX(calc(1% + 4px));
 .track.active {
   color: #c00000;
   font-weight: bold;
-  transform: scale(1.25);
+  transform: scale(1.12);
 }
 
 .track.near {
@@ -294,7 +293,7 @@ input[type=range] {
     <span>E</span>
   </div>
 
-  <div id="bootVer">v0.17</div>
+  <div id="bootVer">v0.17.1</div>
 
   <div class="field" id="userField"></div>
   <div class="field" id="passField"></div>
@@ -344,7 +343,7 @@ input[type=range] {
 
 <div id="version">
 Last Functional Build: N/A<br>
-Current Build: 0.17
+Current Build: 0.17.1
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
@@ -472,8 +471,9 @@ function renderPlaylist() {
 
     div.appendChild(document.createTextNode(tracks[i].title));
 
+    floatingPlay.onclick = togglePlay;
     div.onclick = () => playTrack(i);
-
+    
     playlist.appendChild(div);
   }
 }
