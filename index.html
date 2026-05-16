@@ -10,20 +10,25 @@ body {
   background: #ffffff;
   color: #c00000;
   font-family: monospace;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   height: 100vh;
 }
 
+/* FULL SCREEN CLICK SURFACE */
 #boot {
-  text-align: center;
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   cursor: pointer;
 }
 
 #title {
   font-size: 48px;
   letter-spacing: 8px;
+  display: flex;
+  align-items: center;
 }
 
 .triangle {
@@ -37,7 +42,6 @@ body {
 }
 
 #bootVer {
-  display: block;
   margin-top: 10px;
   font-size: 14px;
   color: #000000;
@@ -55,8 +59,9 @@ body {
   <div id="title">
     T R I <div class="triangle"></div> G E
   </div>
-  <span id="bootVer">0.14g</span>
-  <div id="state">CLICK</div>
+
+  <div id="bootVer">0.14g</div>
+  <div id="state">CLICK ANYWHERE</div>
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -66,11 +71,11 @@ const boot = document.getElementById("boot");
 const state = document.getElementById("state");
 const sfx = document.getElementById("loginSfx");
 
-boot.onclick = function() {
-  state.innerText = "CLICK REGISTERED";
+boot.addEventListener("click", () => {
+  state.innerText = "INITIALIZING...";
   sfx.currentTime = 0;
-  sfx.play().catch(e => console.log("Audio blocked:", e));
-};
+  sfx.play().catch(() => {});
+});
 </script>
 
 </body>
