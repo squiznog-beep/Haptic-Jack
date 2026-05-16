@@ -48,23 +48,13 @@ body {
   font-size: 40px;
 }
 
-#title span {
-  margin-right: 16px;
-}
-
-#title span:nth-child(3) {
-  margin-right: 8px;
-}
-
 /* TRIANGLE */
 .triangle {
   width: 0;
   height: 0;
-
   border-left: 14px solid transparent;
   border-right: 14px solid transparent;
   border-bottom: 24px solid #c00000;
-
   margin-left: 10px;
   margin-right: 18px;
 }
@@ -82,7 +72,6 @@ body {
   min-height: 18px;
 }
 
-/* WAKE UP TEXT */
 #bootText {
   margin-top: 28px;
   color: #4a90ff;
@@ -106,45 +95,7 @@ body {
   align-items: center;
 }
 
-/* floating play triangle (ONLY ONE, FIXED) */
-#floatingPlay {
-  position: absolute;
-  left: calc(50% - 260px - 140px);
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-}
-
-.playTriangle {
-  width: 0;
-  height: 0;
-
-  border-left: 18px solid transparent;
-  border-right: 18px solid transparent;
-  border-bottom: 30px solid #c00000;
-
-  transform-origin: 50% 60%;
-}
-
-.playTriangle.spinning {
-  animation: smoothSpin 4s linear infinite;
-}
-
-@keyframes smoothSpin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
-}
-
-#panel {
-  width: 520px;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-}
-
-/* ---------------- PLAYLIST ---------------- */
-
+/* FIX: stabilize playlist row math */
 #playlist {
   height: 180px;
   display: flex;
@@ -156,10 +107,12 @@ body {
 
 .track {
   padding: 6px;
-  height: 34px;
+  height: 34px; /* LOCKED for alignment stability */
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+  transition: all 0.25s ease;
   cursor: pointer;
 }
 
@@ -171,6 +124,35 @@ body {
 
 .track.near { opacity: 0.55; }
 .track.far { opacity: 0.2; transform: scale(0.88); }
+
+/* ---------------- FLOATING PLAY (FIXED ALIGNMENT) ---------------- */
+
+#floatingPlay {
+  position: fixed;
+  left: calc(50% - 260px - 140px);
+  top: 50%;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: top 0.08s linear;
+}
+
+.playTriangle {
+  width: 0;
+  height: 0;
+  border-left: 18px solid transparent;
+  border-right: 18px solid transparent;
+  border-bottom: 30px solid #c00000;
+  transform-origin: center;
+}
+
+.playTriangle.spinning {
+  animation: spin 5.2s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
 
 /* ---------------- PROGRESS ---------------- */
 
@@ -233,7 +215,6 @@ input[type=range] {
 <body>
 
 <div id="boot">
-
   <div id="title">
     <span>T</span><span>R</span><span>I</span>
     <div class="triangle"></div>
@@ -250,19 +231,20 @@ input[type=range] {
 
 <div id="wrapper">
 
-  <div id="floatingPlay" class="playTriangle"></div>
-
-  <div id="panel">
-    <div id="playlist"></div>
-
-    <div id="progressContainer">
-      <div id="progressBar"></div>
-    </div>
-
-    <div id="volumeWrap">
-      <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
-    </div>
+  <div id="floatingPlay">
+    <div class="playTriangle" id="playIcon"></div>
   </div>
+
+  <div id="playlist"></div>
+
+  <div id="progressContainer">
+    <div id="progressBar"></div>
+  </div>
+
+  <div id="volumeWrap">
+    <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
+  </div>
+
 </div>
 
 <div id="cornerLogo">
@@ -278,17 +260,17 @@ Current Build: 0.16.5
 
 <script>
 
-/* ---------------- TRACK DATA ---------------- */
+/* ---------------- TRACKS ---------------- */
 
 const tracks = [
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.10 },
-  { title: "Announcement 1", file: "Announcement1.oga", volume: 0.60 },
-  { title: "Control Yourself", file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", volume: 0.05 },
-  { title: "Stability", file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume: 0.05 },
-  { title: "Announcement 2", file: "Announcement2.oga", volume: 0.60 },
-  { title: "Announcement 3", file: "Announcement3.oga", volume: 0.60 },
-  { title: "Announcement 4", file: "Announcement4.oga", volume: 0.60 },
-  { title: "Announcement 6", file: "Announcement6.oga", volume: 0.60 }
+  { title:"Prologue", file:"The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume:0.10 },
+  { title:"Announcement 1", file:"Announcement1.oga", volume:0.60 },
+  { title:"Control Yourself", file:"Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", volume:0.05 },
+  { title:"Stability", file:"Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume:0.05 },
+  { title:"Announcement 2", file:"Announcement2.oga", volume:0.60 },
+  { title:"Announcement 3", file:"Announcement3.oga", volume:0.60 },
+  { title:"Announcement 4", file:"Announcement4.oga", volume:0.60 },
+  { title:"Announcement 6", file:"Announcement6.oga", volume:0.60 }
 ];
 
 let currentTrack = 0;
@@ -297,12 +279,20 @@ let globalVolume = 1;
 
 /* ---------------- ELEMENTS ---------------- */
 
-const wrapper = document.getElementById("wrapper");
 const playlist = document.getElementById("playlist");
 const progressBar = document.getElementById("progressBar");
 const progressContainer = document.getElementById("progressContainer");
 const volumeSlider = document.getElementById("volumeSlider");
 const floatingPlay = document.getElementById("floatingPlay");
+const playIcon = document.getElementById("playIcon");
+
+/* ---------------- ALIGN FIX ---------------- */
+
+function updateFloatingAlignment() {
+  const base = 34;
+  const offset = (2 * base);
+  floatingPlay.style.top = `calc(50% - ${offset}px)`;
+}
 
 /* ---------------- AUDIO ---------------- */
 
@@ -313,72 +303,47 @@ function playTrack(i) {
   if (sound) sound.unload();
 
   sound = new Howl({
-    src: [tracks[i].file],
-    html5: true,
+    src:[tracks[i].file],
+    html5:true,
     volume: tracks[i].volume * globalVolume,
 
+    onplay: () => playIcon.classList.add("spinning"),
+    onpause: () => playIcon.classList.remove("spinning"),
     onend: () => {
       if (currentTrack + 1 < tracks.length) playTrack(currentTrack + 1);
     }
   });
 
   sound.play();
-  renderPlaylist();
-  updateFloating();
-}
-
-/* FIXED: real toggle */
-floatingPlay.addEventListener("click", () => {
-  if (!sound) return;
-  sound.playing() ? sound.pause() : sound.play();
-  updateFloating();
-});
-
-function updateFloating() {
-  floatingPlay.classList.toggle("spinning", sound && sound.playing());
+  render();
+  updateFloatingAlignment();
 }
 
 /* ---------------- PLAYLIST ---------------- */
 
-function renderPlaylist() {
+function render() {
 
   playlist.innerHTML = "";
 
-  for (let i = 0; i < tracks.length; i++) {
+  for (let i=0;i<tracks.length;i++) {
 
-    const distance = i - currentTrack;
-    if (Math.abs(distance) > 2) continue;
+    const d = i - currentTrack;
+    if (Math.abs(d) > 2) continue;
 
-    const div = document.createElement("div");
-    div.classList.add("track");
+    const el = document.createElement("div");
+    el.className = "track" + (d===0?" active":d===1||d===-1?" near":" far");
+    el.innerText = tracks[i].title;
+    el.onclick = () => playTrack(i);
 
-    if (distance === 0) div.classList.add("active");
-    else if (Math.abs(distance) === 1) div.classList.add("near");
-    else div.classList.add("far");
-
-    div.textContent = tracks[i].title;
-    div.onclick = () => playTrack(i);
-
-    playlist.appendChild(div);
-  }
-}
-
-/* ---------------- PROGRESS ---------------- */
-
-function updateProgress() {
-
-  if (sound) {
-    const seek = sound.seek() || 0;
-    const dur = sound.duration() || 1;
-    progressBar.style.width = (seek / dur) * 100 + "%";
+    playlist.appendChild(el);
   }
 
-  requestAnimationFrame(updateProgress);
+  updateFloatingAlignment();
 }
 
-/* ---------------- VOLUME FIX (iOS LIVE) ---------------- */
+/* ---------------- VOLUME FIX (REAL TIME IOS) ---------------- */
 
-volumeSlider.addEventListener("input", (e) => {
+volumeSlider.addEventListener("input",(e)=>{
 
   globalVolume = parseFloat(e.target.value);
 
@@ -391,79 +356,57 @@ volumeSlider.addEventListener("input", (e) => {
   if (node) node.volume = v;
 });
 
-/* ---------------- TYPE (FIXED TIMING) ---------------- */
+/* ---------------- PROGRESS ---------------- */
 
-function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+function tick() {
+  if (sound) {
+    const p = (sound.seek()/sound.duration())*100;
+    progressBar.style.width = p + "%";
+  }
+  requestAnimationFrame(tick);
+}
+tick();
 
-async function typeUser(text) {
-  const el = document.getElementById("userField");
-  for (let i = 0; i <= text.length; i++) {
-    el.textContent = text.slice(0, i);
-    await sleep(56); // +40%
+/* ---------------- TYPE FIX (SLOWED + PAUSES) ---------------- */
+
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function typeUser(text){
+  const el=document.getElementById("userField");
+  for(let i=0;i<=text.length;i++){
+    el.innerText=text.slice(0,i);
+    await sleep(60);
   }
 }
 
-async function typePassword(text) {
-  const el = document.getElementById("passField");
-
-  let masked = "";
-  for (let i = 0; i < text.length; i++) {
-
-    el.textContent = masked + text[i];
-    await sleep(72); // +80%
-    masked += "*";
-    el.textContent = masked;
-    await sleep(72);
+async function typePassword(text){
+  const el=document.getElementById("passField");
+  let masked="";
+  for(let i=0;i<text.length;i++){
+    el.innerText=masked+text[i];
+    await sleep(95);
+    masked+="*";
+    el.innerText=masked;
+    await sleep(60);
   }
 }
 
-/* ---------------- BOOT ---------------- */
-
-async function bootSequence() {
-
-  const boot = document.getElementById("boot");
-  const bootText = document.getElementById("bootText");
-
+/* pause between fields */
+async function boot(){
   await sleep(300);
-
   await typeUser("SusanSurandin");
-
-  await sleep(900); // intentional pause
-
+  await sleep(900); // deliberate pause fix
   await typePassword("WitnessMe");
-
-  await sleep(500);
-
-  bootText.textContent = "WELCOME BACK SUSAN";
-
-  await sleep(800);
-
-  boot.style.opacity = 0;
   await sleep(600);
 
-  boot.style.display = "none";
-  wrapper.style.display = "flex";
+  document.getElementById("boot").style.display="none";
+  document.getElementById("wrapper").style.display="flex";
 
-  renderPlaylist();
+  render();
   playTrack(0);
-  updateProgress();
 }
 
-/* ---------------- START ---------------- */
-
-let started = false;
-
-document.getElementById("boot").addEventListener("pointerdown", async () => {
-
-  if (started) return;
-  started = true;
-
-  try { await Howler.ctx.resume(); } catch(e) {}
-
-  bootSequence();
-});
-
-updateProgress();
+document.getElementById("boot").onclick = boot;
 
 </script>
 
