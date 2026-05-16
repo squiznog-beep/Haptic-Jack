@@ -2,38 +2,23 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.13f</title>
+<title>Haptic Player v0.14a</title>
 
-<link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.css"/>
 
 <style>
 
-/* ---------------- PLYR THEME FIX ---------------- */
+/* ---------------- THEME (WHITE + RED TEST MODE) ---------------- */
 
 :root {
-  --plyr-color-main: #b30000;
-  --plyr-audio-controls-background: rgba(20, 20, 20, 0.92);
-  --plyr-control-icon-size: 16px;
+  --accent: #b30000;
 }
-
-.plyr--audio .plyr__controls {
-  background: rgba(20, 20, 20, 0.92);
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.08);
-  backdrop-filter: blur(18px);
-}
-
-.plyr {
-  color: white;
-}
-
-/* ---------------- YOUR EXISTING CODE ---------------- */
 
 body {
   margin: 0;
-  background: black;
+  background: white;
   font-family: monospace;
-  color: white;
+  color: black;
   overflow: hidden;
 }
 
@@ -42,7 +27,7 @@ body {
 #boot {
   position: fixed;
   inset: 0;
-  background: black;
+  background: white;
   z-index: 9999;
   display: flex;
   flex-direction: column;
@@ -51,17 +36,17 @@ body {
 }
 
 #bootVer {
-  font-size: 30px;
-  opacity: 0.5;
+  font-size: 12px;
+  opacity: 0.6;
   margin-left: 12px;
   position: relative;
   top: 6px;
-  color: white;
+  color: var(--accent);
 }
 
 #title {
   font-size: 32px;
-  color: red;
+  color: var(--accent);
   letter-spacing: 4px;
   margin-bottom: 40px;
   display: flex;
@@ -72,7 +57,7 @@ body {
 .triangle {
   width: 0.9em;
   height: 0.9em;
-  background: red;
+  background: var(--accent);
   clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
   position: relative;
   top: 2px;
@@ -85,18 +70,11 @@ body {
 
 .field {
   width: 260px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid #ccc;
   padding: 6px;
   font-size: 14px;
   min-height: 20px;
   margin-bottom: 15px;
-}
-
-#bootText {
-  margin-top: 30px;
-  font-size: 18px;
-  opacity: 0;
-  transition: opacity 0.5s ease;
 }
 
 /* ---------------- PLAYER ---------------- */
@@ -106,35 +84,29 @@ body {
   margin: auto;
   padding: 20px;
   margin-top: 60px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(0,0,0,0.03);
   border-radius: 16px;
   backdrop-filter: blur(20px);
-}
-
-#playlist {
-  margin-top: 20px;
-  text-align: center;
 }
 
 .track {
   padding: 6px;
   transition: all 0.25s ease;
+  cursor: pointer;
 }
 
 .track.active {
   font-weight: bold;
-  opacity: 1;
-  transform: scale(1.3);
+  color: var(--accent);
+  transform: scale(1.2);
 }
 
 .track.near {
-  opacity: 0.5;
-  transform: scale(1);
+  opacity: 0.6;
 }
 
 .track.far {
-  opacity: 0.15;
-  transform: scale(0.85);
+  opacity: 0.2;
 }
 
 #logo {
@@ -144,8 +116,8 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
-  opacity: 0.7;
-  color: red;
+  color: var(--accent);
+  opacity: 0.8;
 }
 
 #version {
@@ -153,8 +125,14 @@ body {
   bottom: 10px;
   right: 12px;
   font-size: 11px;
-  opacity: 0.5;
+  opacity: 0.6;
 }
+
+/* hide amplitude default UI */
+.amplitude-player {
+  display: none;
+}
+
 </style>
 </head>
 
@@ -164,7 +142,7 @@ body {
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.13f</span>
+    <span id="bootVer">0.14a</span>
   </div>
 
   <div class="label">Username</div>
@@ -178,7 +156,6 @@ body {
 
 <!-- PLAYER -->
 <div class="wrapper">
-  <audio id="player" playsinline></audio>
   <div id="playlist"></div>
 </div>
 
@@ -188,115 +165,72 @@ body {
 
 <div id="version">
 Last Functional Build: 0.12<br>
-Current Build: 0.13f
+Current Build: 0.14a
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
 
-<script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
+<!-- AMPLITUDE -->
+<script src="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.js"></script>
 
 <script>
 
 /* ---------------- TRACKS ---------------- */
 
 const tracks = [
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3", volume: 0.1 },
-  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg", volume: 0.6 },
-  { title: "Control Yourself", file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", type: "audio/flac", volume: 0.05 },
-  { title: "Stability", file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", type: "audio/mp3", volume: 0.05 },
-  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg", volume: 0.6 },
-  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg", volume: 0.6 },
-  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg", volume: 0.6 },
-  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg", volume: 0.6 }
+  { name: "Prologue", url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.1 },
+  { name: "Announcement 1", url: "Announcement1.oga", volume: 0.6 },
+  { name: "Control Yourself", url: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", volume: 0.05 },
+  { name: "Stability", url: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume: 0.05 },
+  { name: "Announcement 2", url: "Announcement2.oga", volume: 0.6 },
+  { name: "Announcement 3", url: "Announcement3.oga", volume: 0.6 },
+  { name: "Announcement 4", url: "Announcement4.oga", volume: 0.6 },
+  { name: "Announcement 6", url: "Announcement6.oga", volume: 0.6 }
 ];
 
-const audio = document.getElementById("player");
-const playlistEl = document.getElementById("playlist");
-const loginSfx = document.getElementById("loginSfx");
+/* ---------------- AMPLITUDE INIT ---------------- */
 
-let currentTrack = 0;
-
-/* ---------------- iOS DETECTION ---------------- */
-
-const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
-
-/* ---------------- PLYR ---------------- */
-
-const player = new Plyr(audio, {
-  controls: ['play', 'progress', 'current-time', 'mute', 'volume'],
+Amplitude.init({
+  songs: tracks,
   volume: 0.5
 });
 
-/* ---------------- VOLUME SYSTEM (FIXED) ---------------- */
-
-function applyVolume(v) {
-  player.muted = false;
-  player.volume = v;
-  player.media.volume = v;
-}
-
 /* ---------------- PLAYLIST ---------------- */
 
-function renderPlaylist() {
+const playlistEl = document.getElementById("playlist");
 
+function renderPlaylist() {
   playlistEl.innerHTML = "";
 
-  for (let i = 0; i < tracks.length; i++) {
-
-    const distance = i - currentTrack;
-    if (Math.abs(distance) > 2) continue;
-
+  tracks.forEach((t, i) => {
     const el = document.createElement("div");
-    el.classList.add("track");
-    el.innerText = tracks[i].title;
+    el.className = "track";
+    el.innerText = t.name;
 
-    if (distance === 0) el.classList.add("active");
-    else if (Math.abs(distance) === 1) el.classList.add("near");
-    else el.classList.add("far");
+    el.onclick = () => {
+      Amplitude.playSongAtIndex(i);
+    };
 
-    el.onclick = () => playTrack(i);
     playlistEl.appendChild(el);
-  }
-}
-
-/* ---------------- PLAY TRACK ---------------- */
-
-function playTrack(i) {
-
-  currentTrack = i;
-
-  const v = tracks[i].volume ?? 1;
-
-  // APPLY TO NATIVE AUDIO FIRST (CRITICAL ON IOS)
-  audio.volume = v;
-
-  player.volume = v;
-
-  player.source = {
-    type: 'audio',
-    sources: [{
-      src: tracks[i].file,
-      type: tracks[i].type
-    }]
-  };
-
-  renderPlaylist();
-
-  player.once('loadedmetadata', () => {
-    player.play().catch(()=>{});
   });
 }
 
-player.on("ended", () => {
-  if (currentTrack + 1 < tracks.length) {
-    playTrack(currentTrack + 1);
-  }
-});
+/* highlight active track */
+setInterval(() => {
+  const index = Amplitude.getActiveIndex();
 
-/* ---------------- PASSWORD ---------------- */
+  document.querySelectorAll(".track").forEach((el, i) => {
+    el.classList.remove("active");
+
+    if (i === index) {
+      el.classList.add("active");
+    }
+  });
+}, 200);
+
+/* ---------------- BOOT (UNCHANGED LOGIC) ---------------- */
 
 async function typePassword(el, text) {
-
   let masked = "";
 
   for (let i = 0; i < text.length; i++) {
@@ -308,7 +242,6 @@ async function typePassword(el, text) {
 }
 
 function typeUser(el, text, cb) {
-
   let i = 0;
 
   function step() {
@@ -322,24 +255,15 @@ function typeUser(el, text, cb) {
   step();
 }
 
-/* ---------------- BOOT ---------------- */
-
 function startBoot() {
 
   const u = document.getElementById("userField");
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  const source = ctx.createMediaElementSource(loginSfx);
-  const gain = ctx.createGain();
-  gain.gain.value = 1.1;
-  source.connect(gain);
-  gain.connect(ctx.destination);
-
   setTimeout(() => {
-    loginSfx.play().catch(()=>{});
-  }, 1400);
+    document.getElementById("loginSfx").play().catch(()=>{});
+  }, 1600);
 
   typeUser(u, "SusanSurandin", () => {
 
@@ -350,7 +274,7 @@ function startBoot() {
 
       setTimeout(() => {
         document.getElementById("boot").style.display = "none";
-        playTrack(0);
+        renderPlaylist();
       }, 1500);
 
     });
@@ -359,7 +283,6 @@ function startBoot() {
 }
 
 window.addEventListener("click", startBoot, { once: true });
-window.addEventListener("load", renderPlaylist);
 
 </script>
 
