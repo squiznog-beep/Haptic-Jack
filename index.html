@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.14c</title>
+<title>Haptic Player v0.14d</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.css"/>
 
@@ -34,8 +34,8 @@ body {
 }
 
 #bootVer {
-  font-size: 12px;
-  opacity: 0.6;
+  font-size: 30px;
+  opacity: 0.5;
   margin-left: 12px;
   position: relative;
   top: 6px;
@@ -109,18 +109,20 @@ body {
 
 <body>
 
+<!-- BOOT -->
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.14c</span>
+    <span id="bootVer">0.14d</span>
   </div>
 
-  <div class="field"></div>
-  <div class="field"></div>
+  <div class="field" id="userField"></div>
+  <div class="field" id="passField"></div>
 
-  <div>INITIALIZING...</div>
+  <div id="bootText">INITIALIZING...</div>
 </div>
 
+<!-- PLAYER -->
 <div class="wrapper">
   <div id="playlist"></div>
 </div>
@@ -128,8 +130,8 @@ body {
 <div id="logo">T R I <div class="triangle"></div> G E</div>
 
 <div id="version">
-Last Functional Build: N/A<br>
-Current Build: 0.14c
+Last Functional Build: 0.12<br>
+Current Build: 0.14d
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -138,10 +140,13 @@ Current Build: 0.14c
 
 <script>
 
-/* ---------------- TRACKS (FIXED SCHEMA) ---------------- */
+/* ---------------- TRACKS ---------------- */
 
 const tracks = [
-  { name: "Prologue", url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" },
+  {
+    name: "Prologue",
+    url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3"
+  },
   { name: "Announcement 1", url: "Announcement1.oga" },
   { name: "Control Yourself", url: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac" },
   { name: "Stability", url: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3" },
@@ -153,11 +158,9 @@ const tracks = [
 
 let initialized = false;
 
-/* ---------------- SAFE INIT ---------------- */
+/* ---------------- AMPLITUDE INIT ---------------- */
 
 function initPlayer() {
-
-  if (typeof Amplitude === "undefined") return;
 
   Amplitude.init({
     songs: tracks,
@@ -180,7 +183,7 @@ function renderPlaylist() {
     d.innerText = t.name;
 
     d.onclick = () => {
-      if (!initialized || typeof Amplitude === "undefined") return;
+      if (!initialized) return;
       Amplitude.playSongAtIndex(i);
     };
 
@@ -188,19 +191,13 @@ function renderPlaylist() {
   });
 }
 
-/* ---------------- SAFE HIGHLIGHT LOOP ---------------- */
+/* ---------------- ACTIVE TRACK HIGHLIGHT ---------------- */
 
 setInterval(() => {
 
-  if (!initialized || typeof Amplitude === "undefined") return;
+  if (!initialized) return;
 
-  let idx = 0;
-
-  try {
-    idx = Amplitude.getActiveIndex();
-  } catch (e) {
-    return;
-  }
+  const idx = Amplitude.getActiveIndex();
 
   document.querySelectorAll(".track").forEach((t, i) => {
     t.classList.toggle("active", i === idx);
@@ -212,6 +209,9 @@ setInterval(() => {
 
 function startBoot() {
 
+  if (initialized) return;
+  initialized = true;
+
   document.getElementById("loginSfx").play().catch(()=>{});
 
   setTimeout(() => {
@@ -222,15 +222,16 @@ function startBoot() {
     renderPlaylist();
 
     setTimeout(() => {
-      if (typeof Amplitude !== "undefined") {
-        Amplitude.playSongAtIndex(0);
-      }
-    }, 300);
+      Amplitude.playSongAtIndex(0);
+    }, 200);
 
-  }, 1600);
+  }, 1400);
 }
 
+/* IMPORTANT: mobile-safe trigger */
 window.addEventListener("click", startBoot, { once: true });
+window.addEventListener("touchstart", startBoot, { once: true });
+window.addEventListener("pointerdown", startBoot, { once: true });
 
 </script>
 
