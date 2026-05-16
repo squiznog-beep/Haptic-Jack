@@ -2,11 +2,33 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.13</title>
+<title>Haptic Player v0.12</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
 <style>
+
+/* ---------------- PLYR THEME FIX ---------------- */
+
+:root {
+  --plyr-color-main: #b30000;
+  --plyr-audio-controls-background: rgba(20, 20, 20, 0.92);
+  --plyr-control-icon-size: 16px;
+}
+
+.plyr--audio .plyr__controls {
+  background: rgba(20, 20, 20, 0.92);
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.08);
+  backdrop-filter: blur(18px);
+}
+
+.plyr {
+  color: white;
+}
+
+/* ---------------- YOUR EXISTING CODE ---------------- */
+
 body {
   margin: 0;
   background: black;
@@ -14,8 +36,7 @@ body {
   color: white;
   overflow: hidden;
 }
-
-/* ---------------- TRIAGE SCREEN ---------------- */
+/* ---------------- BOOT ---------------- */
 
 #boot {
   position: fixed;
@@ -33,27 +54,39 @@ body {
   color: red;
   letter-spacing: 4px;
   margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.field {
-  width: 260px;
-  margin: 10px 0;
-  border-bottom: 1px solid #333;
-  padding: 6px;
-  font-size: 14px;
+.triangle {
+  width: 0.9em;
+  height: 0.9em;
+  background: red;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  position: relative;
+  top: 2px;
 }
 
 .label {
-  color: white;
   opacity: 0.7;
   margin-bottom: 4px;
 }
 
+.field {
+  width: 260px;
+  border-bottom: 1px solid #333;
+  padding: 6px;
+  font-size: 14px;
+  min-height: 20px;
+  margin-bottom: 15px;
+}
+
 #bootText {
-  margin-top: 40px;
+  margin-top: 30px;
   font-size: 18px;
   opacity: 0;
-  transition: opacity 1s ease;
+  transition: opacity 0.5s ease;
 }
 
 /* ---------------- PLAYER ---------------- */
@@ -70,13 +103,12 @@ body {
 
 #playlist {
   margin-top: 20px;
+  text-align: center;
 }
 
 .track {
-  text-align: center;
   padding: 6px;
   transition: all 0.25s ease;
-  opacity: 0.2;
 }
 
 .track.active {
@@ -87,12 +119,23 @@ body {
 
 .track.near {
   opacity: 0.5;
-  transform: scale(0.95);
+  transform: scale(1);
 }
 
 .track.far {
-  opacity: 0.1;
-  transform: scale(0.8);
+  opacity: 0.15;
+  transform: scale(0.85);
+}
+
+#logo {
+  position: fixed;
+  bottom: 10px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.7;
+  color: red;
 }
 
 #version {
@@ -107,8 +150,11 @@ body {
 
 <body>
 
+<!-- BOOT -->
 <div id="boot">
-  <div id="title">TRIAGE</div>
+  <div id="title">
+    T R I <div class="triangle"></div> G E
+  </div>
 
   <div class="label">Username</div>
   <div class="field" id="userField"></div>
@@ -119,15 +165,22 @@ body {
   <div id="bootText">INITIALIZING...</div>
 </div>
 
+<!-- PLAYER -->
 <div class="wrapper">
   <audio id="player" playsinline></audio>
   <div id="playlist"></div>
 </div>
 
+<div id="logo">
+  T R I <div class="triangle"></div> G E
+</div>
+
 <div id="version">
 Last Functional Build: 0.12<br>
-Current Build: 0.13
+Current Build: 0.12
 </div>
+
+<audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
 
 <script src="https://cdn.plyr.io/3.7.8/plyr.polyfilled.js"></script>
 
@@ -136,66 +189,27 @@ Current Build: 0.13
 /* ---------------- TRACKS ---------------- */
 
 const tracks = [
-  { title: "Intro: Welcome (Back)", file: "Notes5.oga", type: "audio/ogg" },
-  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3" },
-  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg" },
-  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg" },
-  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg" },
-  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg" },
-  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg" }
+  { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", type: "audio/mp3", volume: 0.1 },
+  { title: "Announcement 1", file: "Announcement1.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Control Yourself", file: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", type: "audio/flac", volume: 0.05 },
+  { title: "Stability", file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", type: "audio/mp3", volume: 0.05 },
+  { title: "Announcement 2", file: "Announcement2.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 3", file: "Announcement3.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 4", file: "Announcement4.oga", type: "audio/ogg", volume: 0.6 },
+  { title: "Announcement 6", file: "Announcement6.oga", type: "audio/ogg", volume: 0.6 }
 ];
 
 const audio = document.getElementById("player");
 const playlistEl = document.getElementById("playlist");
+const loginSfx = document.getElementById("loginSfx");
 
 let currentTrack = 0;
 
-/* ---------------- PLYR ---------------- */
+/* ---------------- PLYR (RESTORED CONTROLS) ---------------- */
 
 const player = new Plyr(audio, {
-  controls: ['play', 'progress', 'mute', 'volume']
+  controls: ['play', 'progress', 'current-time', 'mute', 'volume']
 });
-
-/* ---------------- AUDIO ANALYSER (FIXED) ---------------- */
-
-const ctx = new (window.AudioContext || window.webkitAudioContext)();
-const source = ctx.createMediaElementSource(audio);
-const gainNode = ctx.createGain();     // <-- NEW
-const analyser = ctx.createAnalyser();
-
-analyser.fftSize = 64;
-const data = new Uint8Array(analyser.frequencyBinCount);
-
-/* Correct routing */
-source.connect(gainNode);
-gainNode.connect(analyser);
-analyser.connect(ctx.destination);
-
-/* Sync Plyr slider -> GainNode */
-gainNode.gain.value = player.volume;
-
-player.on('volumechange', () => {
-  gainNode.gain.value = player.volume;
-});
-
-/* Audio reactive loop */
-
-function updateAudioReact() {
-
-  analyser.getByteFrequencyData(data);
-  let avg = data.reduce((a,b)=>a+b,0) / data.length;
-
-  const active = document.querySelector(".track.active");
-
-  if (active) {
-    active.style.textShadow =
-      avg > 120 ? "0 0 18px rgba(255,255,255,0.7)" :
-      avg > 60  ? "0 0 10px rgba(255,255,255,0.4)" :
-                  "0 0 4px rgba(255,255,255,0.15)";
-  }
-
-  requestAnimationFrame(updateAudioReact);
-}
 
 /* ---------------- PLAYLIST ---------------- */
 
@@ -203,21 +217,35 @@ function renderPlaylist() {
 
   playlistEl.innerHTML = "";
 
-  const start = Math.max(0, currentTrack - 2);
-  const end = Math.min(tracks.length - 1, currentTrack + 2);
+  for (let i = 0; i < tracks.length; i++) {
 
-  for (let i = start; i <= end; i++) {
+    const distance = i - currentTrack;
+    if (Math.abs(distance) > 2) continue;
 
     const el = document.createElement("div");
-    el.className = "track";
+    el.classList.add("track");
     el.innerText = tracks[i].title;
 
-    if (i === currentTrack) el.classList.add("active");
-    else el.classList.add("near");
+    if (distance === 0) el.classList.add("active");
+    else if (Math.abs(distance) === 1) el.classList.add("near");
+    else el.classList.add("far");
 
     el.onclick = () => playTrack(i);
     playlistEl.appendChild(el);
   }
+}
+
+/* ---------------- FIXED VOLUME SYSTEM ---------------- */
+
+function applyVolume(i) {
+
+  const targetVolume = tracks[i].volume ?? 1;
+
+  // native audio element
+  audio.volume = targetVolume;
+
+  // plyr wrapper
+  player.volume = targetVolume;
 }
 
 /* ---------------- PLAY TRACK ---------------- */
@@ -235,10 +263,13 @@ function playTrack(i) {
   };
 
   renderPlaylist();
-  player.play().catch(()=>{});
-}
 
-/* ---------------- AUTO FLOW ---------------- */
+  // force volume AFTER source swap settles
+  setTimeout(() => {
+    applyVolume(i);
+    player.play().catch(()=>{});
+  }, 50);
+}
 
 player.on("ended", () => {
   if (currentTrack + 1 < tracks.length) {
@@ -246,22 +277,36 @@ player.on("ended", () => {
   }
 });
 
-/* ---------------- BOOT SEQUENCE ---------------- */
+/* ---------------- PASSWORD ---------------- */
 
-function typeText(el, text, speed, cb) {
+async function typePassword(el, text) {
+
+  let masked = "";
+
+  for (let i = 0; i < text.length; i++) {
+    el.innerText = masked + text[i];
+    await new Promise(r => setTimeout(r, 100));
+    masked += "*";
+    el.innerText = masked;
+  }
+}
+
+function typeUser(el, text, cb) {
 
   let i = 0;
 
   function step() {
     if (i <= text.length) {
-      el.innerText = text.slice(0,i);
+      el.innerText = text.slice(0, i);
       i++;
-      setTimeout(step, speed);
-    } else if (cb) cb();
+      setTimeout(step, 40);
+    } else cb();
   }
 
   step();
 }
+
+/* ---------------- BOOT ---------------- */
 
 function startBoot() {
 
@@ -269,46 +314,36 @@ function startBoot() {
   const p = document.getElementById("passField");
   const bootText = document.getElementById("bootText");
 
-  typeText(u, "SusanSurandin", 40, () => {
+  const ctx = new (window.AudioContext || window.webkitAudioContext)();
+  const source = ctx.createMediaElementSource(loginSfx);
+  const gain = ctx.createGain();
+  gain.gain.value = 1.1;
+  source.connect(gain);
+  gain.connect(ctx.destination);
 
-    typeText(p, "WitnessMe", 40, () => {
+  setTimeout(() => {
+    loginSfx.play().catch(()=>{});
+  }, 1600);
 
-      let dots = 0;
+  typeUser(u, "SusanSurandin", () => {
+
+    typePassword(p, "WitnessMe").then(() => {
+
       bootText.style.opacity = 1;
-
-      const mask = setInterval(() => {
-        p.innerText = "*".repeat("WitnessMe".length);
-
-        dots++;
-        if (dots > 3) {
-          clearInterval(mask);
-          bootText.innerText = "WELCOME BACK SUSAN";
-        }
-      }, 300);
+      bootText.innerText = "WELCOME BACK SUSAN";
 
       setTimeout(() => {
-
         document.getElementById("boot").style.display = "none";
-
-        ctx.resume().then(() => {
-          updateAudioReact();
-          playTrack(0);
-        });
-
-      }, 2000);
+        playTrack(0);
+      }, 1500);
 
     });
 
   });
 }
 
-/* ---------------- INIT ---------------- */
-
 window.addEventListener("click", startBoot, { once: true });
-
-window.addEventListener("load", () => {
-  renderPlaylist();
-});
+window.addEventListener("load", renderPlaylist);
 
 </script>
 
