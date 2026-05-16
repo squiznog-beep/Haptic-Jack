@@ -275,6 +275,15 @@ function playTrack(i) {
   renderPlaylist();
 
   player.once('loadedmetadata', () => {
+    if (isIOS && ctx && audio) {
+  try {
+    sourceNode.disconnect();
+  } catch(e) {}
+
+  sourceNode = ctx.createMediaElementSource(audio);
+  sourceNode.connect(gainNode);
+  gainNode.connect(ctx.destination);
+}
 
     const v = tracks[i].volume ?? 1;
 
