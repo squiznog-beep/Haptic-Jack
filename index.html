@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.13c</title>
+<title>Haptic Player v0.13d</title>
 
 <link rel="stylesheet" href="https://cdn.plyr.io/3.7.8/plyr.css"/>
 
@@ -162,7 +162,7 @@ body {
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.13c</span>
+    <span id="bootVer">0.13d</span>
   </div>
 
   <div class="label">Username</div>
@@ -186,7 +186,7 @@ body {
 
 <div id="version">
 Last Functional Build: 0.12<br>
-Current Build: 0.13c
+Current Build: 0.13d
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -214,12 +214,25 @@ const loginSfx = document.getElementById("loginSfx");
 
 let currentTrack = 0;
 
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+
 /* ---------------- PLYR ---------------- */
 
 const player = new Plyr(audio, {
   controls: ['play', 'progress', 'current-time', 'mute', 'volume'],
   volume: 0.5   // prevent hard reset to 1 internally
 });
+
+let ctx, sourceNode, gainNode;
+
+if (isIOS) {
+  ctx = new (window.AudioContext || window.webkitAudioContext)();
+  sourceNode = ctx.createMediaElementSource(audio);
+  gainNode = ctx.createGain();
+
+  sourceNode.connect(gainNode);
+  gainNode.connect(ctx.destination);
+}
 
 /* ---------------- PLAYLIST ---------------- */
 
@@ -267,14 +280,16 @@ function playTrack(i) {
 
     player.muted = false;
 
-    // hard sync both layers
-    player.media.volume = v;
-    player.volume = v;
+  if (isIOS && gainNode) {
+  gainNode.gain.value = v;
+} else {
+  player.media.volume = v;
+  player.volume = v;
 
-    // force UI refresh tick (this is the missing piece)
-    setTimeout(() => {
-      player.volume = v;
-    }, 0);
+  setTimeout(() => {
+    player.volume = v;
+  }, 0);
+}
 
     player.play().catch(()=>{});
   });
