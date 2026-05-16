@@ -2,225 +2,108 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.14g</title>
+<title>Amplitude Volume Test</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.css"/>
 
 <style>
-
-:root {
-  --accent: #b30000;
-}
-
 body {
-  margin: 0;
-  background: white;
   font-family: monospace;
-  color: black;
-  overflow: hidden;
-}
-
-/* ---------------- BOOT ---------------- */
-
-#boot {
-  position: fixed;
-  inset: 0;
   background: white;
-  z-index: 9999;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-#bootVer {
-  font-size: 12px;
-  opacity: 0.6;
-  margin-left: 12px;
-  position: relative;
-  top: 6px;
-  color: var(--accent);
-}
-
-#title {
-  font-size: 32px;
-  color: var(--accent);
-  letter-spacing: 4px;
-  margin-bottom: 40px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.triangle {
-  width: 0.9em;
-  height: 0.9em;
-  background: var(--accent);
-  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-  position: relative;
-  top: 2px;
-}
-
-.field {
-  width: 260px;
-  border-bottom: 1px solid #ccc;
-  padding: 6px;
-  font-size: 14px;
-  min-height: 20px;
-  margin-bottom: 15px;
-}
-
-#bootText {
-  margin-top: 30px;
-  font-size: 18px;
-  opacity: 0;
-  transition: opacity 0.5s ease;
-}
-
-/* ---------------- PLAYER ---------------- */
-
-.wrapper {
-  max-width: 520px;
-  margin: auto;
-  padding: 20px;
-  margin-top: 60px;
+  color: black;
+  padding: 40px;
 }
 
 .track {
-  padding: 6px;
   cursor: pointer;
-  transition: 0.2s;
+  margin: 8px 0;
 }
 
 .track.active {
-  color: var(--accent);
+  color: #b30000;
   font-weight: bold;
 }
 
-/* ---------------- LOGO ---------------- */
-
-#logo {
-  position: fixed;
-  bottom: 10px;
-  left: 12px;
-  color: var(--accent);
+#player {
+  margin-top: 20px;
 }
 
-#version {
-  position: fixed;
-  bottom: 10px;
-  right: 12px;
-  font-size: 11px;
-  opacity: 0.6;
+.amplitude-volume-slider {
+  width: 200px;
+  margin-top: 20px;
 }
-
 </style>
 </head>
 
 <body>
 
-<!-- BOOT -->
-<div id="boot">
-  <div id="title">
-    T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.14g</span>
-  </div>
+<h2>Amplitude Test Player</h2>
 
-  <div class="field" id="userField"></div>
-  <div class="field" id="passField"></div>
+<div id="playlist"></div>
 
-  <div id="bootText">INITIALIZING...</div>
+<!-- REQUIRED UI ELEMENTS FOR AMPLITUDE -->
+<div id="player">
+  <div class="amplitude-play-pause">Play</div>
+  <input type="range" class="amplitude-volume-slider"/>
+  <input type="range" class="amplitude-song-slider"/>
 </div>
-
-<!-- PLAYER -->
-<div class="wrapper">
-  <div id="playlist"></div>
-
-  <!-- Amplitude UI elements (required) -->
-  <div id="amplitude-player">
-    <div class="amplitude-play-pause amplitude-paused">Play</div>
-    <input type="range" class="amplitude-volume-slider"/>
-    <input type="range" class="amplitude-song-slider"/>
-  </div>
-</div>
-
-<div id="logo">T R I <div class="triangle"></div> G E</div>
-
-<div id="version">
-Last Functional Build: N/A<br>
-Current Build: 0.14g
-</div>
-
-<audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
 
 <script src="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.js"></script>
 
 <script>
 
-/* ---------------- TRACKS ---------------- */
+/* TRACKS */
 
 const tracks = [
-  { name: "Prologue", url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" },
-  { name: "Announcement 1", url: "Announcement1.oga" },
-  { name: "Control Yourself", url: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac" },
-  { name: "Stability", url: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3" },
-  { name: "Announcement 2", url: "Announcement2.oga" },
-  { name: "Announcement 3", url: "Announcement3.oga" },
-  { name: "Announcement 4", url: "Announcement4.oga" },
-  { name: "Announcement 6", url: "Announcement6.oga" }
+  {
+    name: "Prologue",
+    url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3"
+  },
+  {
+    name: "Announcement 1",
+    url: "Announcement1.oga"
+  },
+  {
+    name: "Control Yourself",
+    url: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac"
+  }
 ];
 
-/* ---------------- VOLUME FIX LAYER ---------------- */
+/* INIT */
 
-function forceVolume(v) {
+Amplitude.init({
+  songs: tracks,
+  volume: 0.5
+});
+
+/* FORCE REAL AUDIO SYNC (THIS IS THE FIX) */
+
+function syncVolume() {
   const audio = Amplitude.audio();
   if (!audio) return;
 
-  audio.volume = v;
+  audio.volume = Amplitude.getVolume();
 }
 
-/* ---------------- INIT ---------------- */
+/* bind slider + state changes */
+Amplitude.bind('volume_change', syncVolume);
+Amplitude.bind('song_change', syncVolume);
 
-function initPlayer() {
+/* PLAYLIST */
 
-  Amplitude.init({
-    songs: tracks,
-    volume: 0.5
-  });
+const el = document.getElementById("playlist");
 
-  // hard sync volume every time it changes
-  Amplitude.bind('volume_change', function () {
-    forceVolume(Amplitude.getVolume());
-  });
+tracks.forEach((t, i) => {
+  const div = document.createElement("div");
+  div.className = "track";
+  div.innerText = t.name;
 
-  Amplitude.bind('song_change', function () {
-    setTimeout(() => {
-      forceVolume(Amplitude.getVolume());
-    }, 0);
-  });
+  div.onclick = () => {
+    Amplitude.playSongAtIndex(i);
+  };
 
-}
-
-/* ---------------- PLAYLIST ---------------- */
-
-function renderPlaylist() {
-
-  const el = document.getElementById("playlist");
-  el.innerHTML = "";
-
-  tracks.forEach((t, i) => {
-    const d = document.createElement("div");
-    d.className = "track";
-    d.innerText = t.name;
-
-    d.onclick = () => {
-      Amplitude.playSongAtIndex(i);
-    };
-
-    el.appendChild(d);
-  });
-
-}
+  el.appendChild(div);
+});
 
 /* highlight active */
 setInterval(() => {
@@ -229,30 +112,7 @@ setInterval(() => {
   document.querySelectorAll(".track").forEach((t, i) => {
     t.classList.toggle("active", i === idx);
   });
-
 }, 200);
-
-/* ---------------- BOOT ---------------- */
-
-function startBoot() {
-
-  document.getElementById("loginSfx").play().catch(()=>{});
-
-  setTimeout(() => {
-
-    document.getElementById("boot").style.display = "none";
-
-    initPlayer();
-    renderPlaylist();
-
-    setTimeout(() => {
-      Amplitude.playSongAtIndex(0);
-    }, 250);
-
-  }, 1600);
-}
-
-window.addEventListener("click", startBoot, { once: true });
 
 </script>
 
