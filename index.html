@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE v0.15.6</title>
+<title>TRI▲GE v0.15.6.1</title>
 
 <style>
 
@@ -26,22 +26,20 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-
-  cursor: pointer;
 }
 
-/* HEADER FIX */
+/* HEADER */
 #title {
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
   width: 100%;
 
-  transform: translateX(6px);
-  letter-spacing: 6px;
-
+  letter-spacing: 4px;
   font-size: 40px;
   color: #c00000;
+
+  transform: translateX(6px);
 }
 
 .triangle {
@@ -51,23 +49,11 @@ body {
   border-right: 14px solid transparent;
   border-bottom: 24px solid #c00000;
 
-  margin-left: 10px;
-  margin-right: 18px;
+  margin-left: 12px;
+  margin-right: 22px;
 }
 
-#bootVer {
-  margin-top: 10px;
-  font-size: 13px;
-}
-
-.field {
-  width: 260px;
-  border-bottom: 1px solid #ddd;
-  margin-top: 14px;
-  padding: 6px;
-}
-
-/* WAKE TEXT */
+/* BOOT TEXT */
 #bootText {
   margin-top: 28px;
   color: #4a90ff;
@@ -86,8 +72,8 @@ body {
 #wrapper {
   display: none;
   height: 100vh;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 
 #panel {
@@ -114,11 +100,11 @@ body {
   transform: scale(1.25);
 }
 
-/* ---------------- ACTIVE CONTROL ---------------- */
+/* ---------------- FLOAT CONTROL ---------------- */
 
 #activeControl {
   position: fixed;
-  left: 38%;
+  left: calc(50% - 220px);
   top: 50%;
   transform: translateY(-50%);
 }
@@ -126,37 +112,38 @@ body {
 .playTriangle {
   width: 0;
   height: 0;
-
   border-left: 18px solid transparent;
   border-right: 18px solid transparent;
   border-bottom: 30px solid #c00000;
 }
 
 .playTriangle.spinning {
-  animation: jumpSpin 1.8s cubic-bezier(.2,.8,.2,1) infinite;
+  animation: smoothSpin 2.8s linear infinite;
 }
 
-@keyframes jumpSpin {
-  0% { transform: translateY(0) rotate(0deg); }
-  25% { transform: translateY(-4px) rotate(90deg); }
-  50% { transform: translateY(0) rotate(180deg); }
-  75% { transform: translateY(-3px) rotate(270deg); }
-  100% { transform: translateY(0) rotate(360deg); }
+@keyframes smoothSpin {
+  0% { transform: rotate(0deg); }
+  25% { transform: rotate(90deg); }
+  50% { transform: rotate(180deg); }
+  75% { transform: rotate(270deg); }
+  100% { transform: rotate(360deg); }
 }
 
-/* ---------------- CONTROLS ---------------- */
+/* ---------------- PROGRESS ---------------- */
 
 #progressContainer {
   width: 100%;
   height: 6px;
-  background: #eee;
+  background: #e8e8e8;
 }
 
 #progressBar {
-  height: 100%;
   width: 0%;
+  height: 100%;
   background: #c00000;
 }
+
+/* ---------------- VOLUME ---------------- */
 
 #volumeWrap {
   margin-top: 18px;
@@ -167,6 +154,34 @@ input[type=range] {
   accent-color: #c00000;
 }
 
+/* ---------------- CORNER LOGO ---------------- */
+
+#cornerLogo {
+  position: fixed;
+  bottom: 10px;
+  left: 12px;
+  display: flex;
+  align-items: center;
+
+  color: #c00000;
+  letter-spacing: 6px;
+}
+
+#cornerLogo .triangle {
+  margin-left: 12px;
+  margin-right: 22px;
+}
+
+/* ---------------- VERSION ---------------- */
+
+#version {
+  position: fixed;
+  bottom: 10px;
+  right: 12px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
 </style>
 </head>
 
@@ -175,22 +190,17 @@ input[type=range] {
 <div id="boot">
 
   <div id="title">
-    T R I <div class="triangle"></div> G E
+    <span>T</span><span>R</span><span>I</span>
+    <div class="triangle"></div>
+    <span>G</span><span>E</span>
   </div>
 
-  <div id="bootVer">v0.15.6</div>
-
-  <div class="field" id="userField"></div>
-  <div class="field" id="passField"></div>
-
   <div id="bootText">Wake up -U</div>
-
 </div>
 
 <div id="wrapper">
 
   <div id="panel">
-
     <div id="playlist"></div>
 
     <div id="progressContainer">
@@ -200,7 +210,6 @@ input[type=range] {
     <div id="volumeWrap">
       <input type="range" id="volumeSlider" min="0" max="1" step="0.01" value="1">
     </div>
-
   </div>
 
 </div>
@@ -209,16 +218,24 @@ input[type=range] {
   <div class="playTriangle spinning"></div>
 </div>
 
+<div id="cornerLogo">
+  T R I <div class="triangle"></div> G E
+</div>
+
+<div id="version">
+Last Functional Build: N/A<br>
+Current Build: 0.15.6.1
+</div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
 
 <script>
 
-/* STATE */
 let currentTrack = 0;
 let sound = null;
 let globalVolume = 1;
+let bootLocked = false;
 
-/* TRACKS */
 const tracks = [
   { title: "Prologue", file: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.1 },
   { title: "Announcement 1", file: "Announcement1.oga", volume: 0.6 },
@@ -226,7 +243,6 @@ const tracks = [
   { title: "Stability", file: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume: 0.05 }
 ];
 
-/* AUDIO */
 function playTrack(i) {
 
   currentTrack = i;
@@ -247,81 +263,59 @@ function playTrack(i) {
   render();
 }
 
-/* PLAYLIST */
 function render() {
 
   const list = document.getElementById("playlist");
   list.innerHTML = "";
 
-  tracks.forEach((t, i) => {
-
+  tracks.forEach((t,i) => {
     const div = document.createElement("div");
     div.className = "track";
-
-    if (i === currentTrack) {
-      div.classList.add("active");
-    }
-
+    if (i === currentTrack) div.classList.add("active");
     div.innerText = t.title;
     div.onclick = () => playTrack(i);
-
     list.appendChild(div);
   });
 }
 
-/* ACTIVE CONTROL */
 document.getElementById("activeControl").onclick = () => {
   if (!sound) return;
-
-  if (sound.playing()) sound.pause();
-  else sound.play();
+  sound.playing() ? sound.pause() : sound.play();
 };
 
-/* BOOT */
-async function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+document.getElementById("volumeSlider").addEventListener("input",(e)=>{
+  globalVolume = parseFloat(e.target.value);
+  if (sound) sound.volume(tracks[currentTrack].volume * globalVolume);
+});
 
-async function typeUser(text){
-  const el = document.getElementById("userField");
-  for(let i=0;i<=text.length;i++){
-    el.innerText = text.slice(0,i);
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+async function typeUser(t){
+  const el=document.getElementById("bootText");
+  for(let i=0;i<=t.length;i++){
+    el.innerText=t.slice(0,i);
     await sleep(56);
   }
 }
 
-async function typePassword(text){
-  const el = document.getElementById("passField");
-  let masked="";
-  for(let i=0;i<text.length;i++){
-    el.innerText = masked + text[i];
-    await sleep(72);
-    masked+="*";
-    el.innerText = masked;
-    await sleep(36);
-  }
-}
-
-async function bootSequence(){
-
+async function boot(){
   await typeUser("SusanSurandin");
   await sleep(800);
-
-  await typePassword("WitnessMe");
-  await sleep(600);
-
-  document.getElementById("bootText").innerText = "INITIALIZING AUDIO SUBSYSTEM";
+  document.getElementById("bootText").innerText="INITIALIZING AUDIO SUBSYSTEM";
   await sleep(900);
-
-  document.getElementById("bootText").innerText = "WELCOME BACK SUSAN";
+  document.getElementById("bootText").innerText="WELCOME BACK SUSAN";
   await sleep(800);
-
-  document.getElementById("boot").style.display = "none";
-  document.getElementById("wrapper").style.display = "flex";
-
+  document.getElementById("boot").style.display="none";
+  document.getElementById("wrapper").style.display="flex";
   render();
   playTrack(0);
 }
 
-document.getElementById("boot").addEventListener("pointerdown", bootSequence);
+document.getElementById("boot").addEventListener("pointerdown",()=>{
+  if(bootLocked) return;
+  bootLocked=true;
+  boot();
+});
 
 </script>
 
