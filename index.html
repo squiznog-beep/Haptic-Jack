@@ -2,45 +2,116 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Amplitude Audio Lab v0.14f</title>
+<title>Haptic Player v0.14g</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.css"/>
 
 <style>
 
-body {
-  margin: 0;
-  font-family: monospace;
-  background: white;
-  color: black;
+:root {
+  --accent: #b30000;
 }
 
+body {
+  margin: 0;
+  background: white;
+  font-family: monospace;
+  color: black;
+  overflow: hidden;
+}
+
+/* ---------------- BOOT ---------------- */
+
+#boot {
+  position: fixed;
+  inset: 0;
+  background: white;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+#bootVer {
+  font-size: 12px;
+  opacity: 0.6;
+  margin-left: 12px;
+  position: relative;
+  top: 6px;
+  color: var(--accent);
+}
+
+#title {
+  font-size: 32px;
+  color: var(--accent);
+  letter-spacing: 4px;
+  margin-bottom: 40px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.triangle {
+  width: 0.9em;
+  height: 0.9em;
+  background: var(--accent);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  position: relative;
+  top: 2px;
+}
+
+.field {
+  width: 260px;
+  border-bottom: 1px solid #ccc;
+  padding: 6px;
+  font-size: 14px;
+  min-height: 20px;
+  margin-bottom: 15px;
+}
+
+#bootText {
+  margin-top: 30px;
+  font-size: 18px;
+  opacity: 0;
+  transition: opacity 0.5s ease;
+}
+
+/* ---------------- PLAYER ---------------- */
+
 .wrapper {
-  max-width: 600px;
-  margin: 60px auto;
+  max-width: 520px;
+  margin: auto;
   padding: 20px;
+  margin-top: 60px;
 }
 
 .track {
-  padding: 10px;
+  padding: 6px;
   cursor: pointer;
-  border-bottom: 1px solid #ddd;
+  transition: 0.2s;
 }
 
 .track.active {
-  color: #b30000;
+  color: var(--accent);
   font-weight: bold;
 }
 
-.controls {
-  margin-bottom: 20px;
-  padding: 10px;
-  border: 1px solid #ccc;
+/* ---------------- LOGO ---------------- */
+
+#logo {
+  position: fixed;
+  bottom: 10px;
+  left: 12px;
+  color: var(--accent);
 }
 
-label {
-  display: block;
-  margin-bottom: 6px;
+#version {
+  position: fixed;
+  bottom: 10px;
+  right: 12px;
+  font-size: 11px;
+  opacity: 0.6;
 }
 
 </style>
@@ -48,17 +119,39 @@ label {
 
 <body>
 
-<div class="wrapper">
-
-  <div class="controls">
-    <label>Global Volume (Amplitude)</label>
-    <input type="range" min="0" max="100" value="50"
-      oninput="Amplitude.setVolume(this.value / 100)">
+<!-- BOOT -->
+<div id="boot">
+  <div id="title">
+    T R I <div class="triangle"></div> G E
+    <span id="bootVer">0.14g</span>
   </div>
 
+  <div class="field" id="userField"></div>
+  <div class="field" id="passField"></div>
+
+  <div id="bootText">INITIALIZING...</div>
+</div>
+
+<!-- PLAYER -->
+<div class="wrapper">
   <div id="playlist"></div>
 
+  <!-- Amplitude UI elements (required) -->
+  <div id="amplitude-player">
+    <div class="amplitude-play-pause amplitude-paused">Play</div>
+    <input type="range" class="amplitude-volume-slider"/>
+    <input type="range" class="amplitude-song-slider"/>
+  </div>
 </div>
+
+<div id="logo">T R I <div class="triangle"></div> G E</div>
+
+<div id="version">
+Last Functional Build: N/A<br>
+Current Build: 0.14g
+</div>
+
+<audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
 
 <script src="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.js"></script>
 
@@ -77,48 +170,89 @@ const tracks = [
   { name: "Announcement 6", url: "Announcement6.oga" }
 ];
 
+/* ---------------- VOLUME FIX LAYER ---------------- */
+
+function forceVolume(v) {
+  const audio = Amplitude.audio();
+  if (!audio) return;
+
+  audio.volume = v;
+}
+
 /* ---------------- INIT ---------------- */
 
-Amplitude.init({
-  songs: tracks,
-  volume: 0.5
-});
+function initPlayer() {
 
-/* ---------------- PLAYLIST UI ---------------- */
+  Amplitude.init({
+    songs: tracks,
+    volume: 0.5
+  });
 
-const el = document.getElementById("playlist");
+  // hard sync volume every time it changes
+  Amplitude.bind('volume_change', function () {
+    forceVolume(Amplitude.getVolume());
+  });
 
-function render() {
+  Amplitude.bind('song_change', function () {
+    setTimeout(() => {
+      forceVolume(Amplitude.getVolume());
+    }, 0);
+  });
 
+}
+
+/* ---------------- PLAYLIST ---------------- */
+
+function renderPlaylist() {
+
+  const el = document.getElementById("playlist");
   el.innerHTML = "";
 
   tracks.forEach((t, i) => {
+    const d = document.createElement("div");
+    d.className = "track";
+    d.innerText = t.name;
 
-    const div = document.createElement("div");
-    div.className = "track";
-    div.innerText = t.name;
-
-    div.onclick = () => {
+    d.onclick = () => {
       Amplitude.playSongAtIndex(i);
     };
 
-    el.appendChild(div);
+    el.appendChild(d);
   });
+
 }
 
-render();
-
-/* ---------------- ACTIVE TRACK HIGHLIGHT ---------------- */
-
+/* highlight active */
 setInterval(() => {
-
   const idx = Amplitude.getActiveIndex();
 
   document.querySelectorAll(".track").forEach((t, i) => {
     t.classList.toggle("active", i === idx);
   });
 
-}, 150);
+}, 200);
+
+/* ---------------- BOOT ---------------- */
+
+function startBoot() {
+
+  document.getElementById("loginSfx").play().catch(()=>{});
+
+  setTimeout(() => {
+
+    document.getElementById("boot").style.display = "none";
+
+    initPlayer();
+    renderPlaylist();
+
+    setTimeout(() => {
+      Amplitude.playSongAtIndex(0);
+    }, 250);
+
+  }, 1600);
+}
+
+window.addEventListener("click", startBoot, { once: true });
 
 </script>
 
