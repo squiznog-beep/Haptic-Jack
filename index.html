@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.14a</title>
+<title>Haptic Player v0.14b</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.css"/>
 
@@ -112,7 +112,7 @@ body {
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.14a</span>
+    <span id="bootVer">0.14b</span>
   </div>
 
   <div class="field" id="userField"></div>
@@ -128,8 +128,8 @@ body {
 <div id="logo">T R I <div class="triangle"></div> G E</div>
 
 <div id="version">
-Last Functional Build: 0.12<br>
-Current Build: 0.14a
+Last Functional Build: N/A<br>
+Current Build: 0.14b
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -151,6 +151,10 @@ const tracks = [
   { name: "Announcement 6", url: "Announcement6.oga", volume: 0.6 }
 ];
 
+/* ---------------- STATE ---------------- */
+
+let initialized = false;
+
 /* ---------------- AMPLITUDE INIT ---------------- */
 
 function initPlayer() {
@@ -160,6 +164,7 @@ function initPlayer() {
     volume: 0.5
   });
 
+  initialized = true;
 }
 
 /* ---------------- PLAYLIST ---------------- */
@@ -175,6 +180,7 @@ function renderPlaylist() {
     d.innerText = t.name;
 
     d.onclick = () => {
+      if (!initialized) return;
       Amplitude.playSongAtIndex(i);
     };
 
@@ -185,6 +191,8 @@ function renderPlaylist() {
 
 /* highlight active */
 setInterval(() => {
+  if (!initialized) return;
+
   const idx = Amplitude.getActiveIndex();
 
   document.querySelectorAll(".track").forEach((t, i) => {
@@ -206,8 +214,6 @@ function startBoot() {
     initPlayer();
     renderPlaylist();
 
-    /* CRITICAL FIX:
-       force first playable state */
     setTimeout(() => {
       Amplitude.playSongAtIndex(0);
     }, 200);
