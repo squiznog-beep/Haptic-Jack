@@ -2,18 +2,17 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE</title>
+<title>TRI▲GE v0.14i</title>
 
 <style>
 body {
   margin: 0;
-  background: #ffffff;
-  color: #c00000;
+  background: white;
   font-family: monospace;
-  height: 100vh;
 }
 
-/* FULL SCREEN CLICK SURFACE */
+/* ---------------- BOOT ---------------- */
+
 #boot {
   position: fixed;
   inset: 0;
@@ -22,17 +21,18 @@ body {
   justify-content: center;
   align-items: center;
   cursor: pointer;
+  background: white;
 }
 
 #title {
   font-size: 48px;
   letter-spacing: 8px;
+  color: #c00000;
   display: flex;
   align-items: center;
 }
 
 .triangle {
-  display: inline-block;
   width: 0;
   height: 0;
   border-left: 14px solid transparent;
@@ -43,39 +43,154 @@ body {
 
 #bootVer {
   margin-top: 10px;
+  color: black;
   font-size: 14px;
-  color: #000000;
 }
 
 #state {
   margin-top: 20px;
+  color: black;
+}
+
+/* ---------------- LOGIN ---------------- */
+
+#login {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: white;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+}
+
+.field {
+  width: 260px;
+  border-bottom: 1px solid #ccc;
+  margin: 10px;
+  padding: 6px;
+}
+
+/* ---------------- PLAYER ---------------- */
+
+#player {
+  display: none;
+  padding: 20px;
+}
+
+.track {
+  padding: 6px;
+  cursor: pointer;
+  color: black;
+}
+
+.track.active {
+  color: #c00000;
+  font-weight: bold;
 }
 </style>
 </head>
 
 <body>
 
+<!-- BOOT -->
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
   </div>
-
-  <div id="bootVer">0.14g</div>
-  <div id="state">CLICK ANYWHERE</div>
+  <div id="bootVer">0.14i</div>
+  <div id="state">CLICK TO INITIALIZE</div>
 </div>
 
-<audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
+<!-- LOGIN -->
+<div id="login">
+  <div class="field" id="user">USERNAME</div>
+  <div class="field" id="pass">PASSWORD</div>
+</div>
+
+<!-- PLAYER -->
+<div id="player">
+  <div class="track" onclick="playTrack(0)">Prologue</div>
+  <div class="track" onclick="playTrack(1)">Announcement 1</div>
+</div>
+
+<audio id="audio"></audio>
+<audio id="loginSfx" src="Notes5.oga"></audio>
 
 <script>
 const boot = document.getElementById("boot");
+const login = document.getElementById("login");
+const player = document.getElementById("player");
 const state = document.getElementById("state");
-const sfx = document.getElementById("loginSfx");
+const loginSfx = document.getElementById("loginSfx");
+const audio = document.getElementById("audio");
 
-boot.addEventListener("click", () => {
+let stage = 0;
+
+/* ---------------- BOOT ---------------- */
+
+boot.onclick = () => {
+
+  if (stage !== 0) return;
+  stage = 1;
+
   state.innerText = "INITIALIZING...";
-  sfx.currentTime = 0;
-  sfx.play().catch(() => {});
-});
+
+  setTimeout(() => {
+    loginSfx.play();
+    boot.style.display = "none";
+    login.style.display = "flex";
+  }, 600);
+
+  setTimeout(() => {
+    typeLogin();
+  }, 900);
+};
+
+/* ---------------- LOGIN TYPE ---------------- */
+
+function typeLogin() {
+  const u = document.getElementById("user");
+  const p = document.getElementById("pass");
+
+  let user = "SusanSurandin";
+  let pass = "WitnessMe";
+
+  let i = 0;
+  let j = 0;
+
+  let userInterval = setInterval(() => {
+    u.innerText = user.slice(0, i++);
+    if (i > user.length) {
+      clearInterval(userInterval);
+
+      let passInterval = setInterval(() => {
+        p.innerText = pass.slice(0, j++);
+        if (j > pass.length) {
+          clearInterval(passInterval);
+
+          setTimeout(() => {
+            login.style.display = "none";
+            player.style.display = "block";
+            stage = 2;
+          }, 600);
+        }
+      }, 80);
+    }
+  }, 60);
+}
+
+/* ---------------- AUDIO ---------------- */
+
+const tracks = [
+  "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3",
+  "Announcement1.oga"
+];
+
+function playTrack(i) {
+  audio.src = tracks[i];
+  audio.play();
+}
 </script>
 
 </body>
