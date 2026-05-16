@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>Haptic Player v0.14b</title>
+<title>Haptic Player v0.14c</title>
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/amplitudejs@5.3.2/dist/amplitude.min.css"/>
 
@@ -112,13 +112,13 @@ body {
 <div id="boot">
   <div id="title">
     T R I <div class="triangle"></div> G E
-    <span id="bootVer">0.14b</span>
+    <span id="bootVer">0.14c</span>
   </div>
 
-  <div class="field" id="userField"></div>
-  <div class="field" id="passField"></div>
+  <div class="field"></div>
+  <div class="field"></div>
 
-  <div id="bootText">INITIALIZING...</div>
+  <div>INITIALIZING...</div>
 </div>
 
 <div class="wrapper">
@@ -129,7 +129,7 @@ body {
 
 <div id="version">
 Last Functional Build: N/A<br>
-Current Build: 0.14b
+Current Build: 0.14c
 </div>
 
 <audio id="loginSfx" src="Notes5.oga" preload="auto"></audio>
@@ -138,26 +138,26 @@ Current Build: 0.14b
 
 <script>
 
-/* ---------------- TRACKS ---------------- */
+/* ---------------- TRACKS (FIXED SCHEMA) ---------------- */
 
 const tracks = [
-  { name: "Prologue", url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.1 },
-  { name: "Announcement 1", url: "Announcement1.oga", volume: 0.6 },
-  { name: "Control Yourself", url: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", volume: 0.05 },
-  { name: "Stability", url: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume: 0.05 },
-  { name: "Announcement 2", url: "Announcement2.oga", volume: 0.6 },
-  { name: "Announcement 3", url: "Announcement3.oga", volume: 0.6 },
-  { name: "Announcement 4", url: "Announcement4.oga", volume: 0.6 },
-  { name: "Announcement 6", url: "Announcement6.oga", volume: 0.6 }
+  { name: "Prologue", url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3" },
+  { name: "Announcement 1", url: "Announcement1.oga" },
+  { name: "Control Yourself", url: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac" },
+  { name: "Stability", url: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3" },
+  { name: "Announcement 2", url: "Announcement2.oga" },
+  { name: "Announcement 3", url: "Announcement3.oga" },
+  { name: "Announcement 4", url: "Announcement4.oga" },
+  { name: "Announcement 6", url: "Announcement6.oga" }
 ];
-
-/* ---------------- STATE ---------------- */
 
 let initialized = false;
 
-/* ---------------- AMPLITUDE INIT ---------------- */
+/* ---------------- SAFE INIT ---------------- */
 
 function initPlayer() {
+
+  if (typeof Amplitude === "undefined") return;
 
   Amplitude.init({
     songs: tracks,
@@ -180,20 +180,27 @@ function renderPlaylist() {
     d.innerText = t.name;
 
     d.onclick = () => {
-      if (!initialized) return;
+      if (!initialized || typeof Amplitude === "undefined") return;
       Amplitude.playSongAtIndex(i);
     };
 
     el.appendChild(d);
   });
-
 }
 
-/* highlight active */
-setInterval(() => {
-  if (!initialized) return;
+/* ---------------- SAFE HIGHLIGHT LOOP ---------------- */
 
-  const idx = Amplitude.getActiveIndex();
+setInterval(() => {
+
+  if (!initialized || typeof Amplitude === "undefined") return;
+
+  let idx = 0;
+
+  try {
+    idx = Amplitude.getActiveIndex();
+  } catch (e) {
+    return;
+  }
 
   document.querySelectorAll(".track").forEach((t, i) => {
     t.classList.toggle("active", i === idx);
@@ -215,8 +222,10 @@ function startBoot() {
     renderPlaylist();
 
     setTimeout(() => {
-      Amplitude.playSongAtIndex(0);
-    }, 200);
+      if (typeof Amplitude !== "undefined") {
+        Amplitude.playSongAtIndex(0);
+      }
+    }, 300);
 
   }, 1600);
 }
