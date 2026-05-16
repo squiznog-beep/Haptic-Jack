@@ -34,8 +34,8 @@ body {
 }
 
 #bootVer {
-  font-size: 30px;
-  opacity: 0.5;
+  font-size: 12px;
+  opacity: 0.6;
   margin-left: 12px;
   position: relative;
   top: 6px;
@@ -130,7 +130,7 @@ body {
 <div id="logo">T R I <div class="triangle"></div> G E</div>
 
 <div id="version">
-Last Functional Build: 0.12<br>
+Last Functional Build: N/A<br>
 Current Build: 0.14d
 </div>
 
@@ -143,24 +143,48 @@ Current Build: 0.14d
 /* ---------------- TRACKS ---------------- */
 
 const tracks = [
-  {
-    name: "Prologue",
-    url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3"
-  },
-  { name: "Announcement 1", url: "Announcement1.oga" },
-  { name: "Control Yourself", url: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac" },
-  { name: "Stability", url: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3" },
-  { name: "Announcement 2", url: "Announcement2.oga" },
-  { name: "Announcement 3", url: "Announcement3.oga" },
-  { name: "Announcement 4", url: "Announcement4.oga" },
-  { name: "Announcement 6", url: "Announcement6.oga" }
+  { name: "Prologue", url: "The Wolf Among Us - Prologue Song 10 Minutes (Seamless Loop).mp3", volume: 0.1 },
+  { name: "Announcement 1", url: "Announcement1.oga", volume: 0.6 },
+  { name: "Control Yourself", url: "Edith Margaret Mudge - Triangle Agency - 01 Control Yourself.flac", volume: 0.05 },
+  { name: "Stability", url: "Edith Margaret Mudge - Stability - Expansion Pack - 01 Stability - Loopable Extension.mp3", volume: 0.05 },
+  { name: "Announcement 2", url: "Announcement2.oga", volume: 0.6 },
+  { name: "Announcement 3", url: "Announcement3.oga", volume: 0.6 },
+  { name: "Announcement 4", url: "Announcement4.oga", volume: 0.6 },
+  { name: "Announcement 6", url: "Announcement6.oga", volume: 0.6 }
 ];
 
 let initialized = false;
 
+/* ---------------- BOOT FLOW ---------------- */
+
+function startBoot() {
+
+  const login = document.getElementById("loginSfx");
+
+  login.play().catch(()=>{});
+
+  typeUser("userField", "SusanSurandin", () => {
+    typePassword("passField", "WitnessMe", () => {
+
+      document.getElementById("bootText").style.opacity = 1;
+      document.getElementById("bootText").innerText = "WELCOME BACK SUSAN";
+
+      setTimeout(() => {
+        document.getElementById("boot").style.display = "none";
+
+        initAmplitude();
+
+      }, 1200);
+
+    });
+  });
+}
+
 /* ---------------- AMPLITUDE INIT ---------------- */
 
-function initPlayer() {
+function initAmplitude() {
+
+  if (initialized) return;
 
   Amplitude.init({
     songs: tracks,
@@ -168,6 +192,12 @@ function initPlayer() {
   });
 
   initialized = true;
+
+  renderPlaylist();
+
+  setTimeout(() => {
+    Amplitude.playSongAtIndex(0);
+  }, 250);
 }
 
 /* ---------------- PLAYLIST ---------------- */
@@ -178,21 +208,22 @@ function renderPlaylist() {
   el.innerHTML = "";
 
   tracks.forEach((t, i) => {
-    const d = document.createElement("div");
-    d.className = "track";
-    d.innerText = t.name;
 
-    d.onclick = () => {
+    const div = document.createElement("div");
+    div.className = "track";
+    div.innerText = t.name;
+
+    div.onclick = () => {
       if (!initialized) return;
       Amplitude.playSongAtIndex(i);
     };
 
-    el.appendChild(d);
+    el.appendChild(div);
   });
+
 }
 
-/* ---------------- ACTIVE TRACK HIGHLIGHT ---------------- */
-
+/* highlight active */
 setInterval(() => {
 
   if (!initialized) return;
@@ -205,33 +236,45 @@ setInterval(() => {
 
 }, 200);
 
-/* ---------------- BOOT ---------------- */
+/* ---------------- TYPE EFFECTS ---------------- */
 
-function startBoot() {
+function typeUser(id, text, cb) {
 
-  if (initialized) return;
-  initialized = true;
+  const el = document.getElementById(id);
+  let i = 0;
 
-  document.getElementById("loginSfx").play().catch(()=>{});
+  function step() {
+    if (i <= text.length) {
+      el.innerText = text.slice(0, i);
+      i++;
+      setTimeout(step, 40);
+    } else cb();
+  }
 
-  setTimeout(() => {
-
-    document.getElementById("boot").style.display = "none";
-
-    initPlayer();
-    renderPlaylist();
-
-    setTimeout(() => {
-      Amplitude.playSongAtIndex(0);
-    }, 200);
-
-  }, 1400);
+  step();
 }
 
-/* IMPORTANT: mobile-safe trigger */
+function typePassword(id, text, cb) {
+
+  const el = document.getElementById(id);
+  let masked = "";
+  let i = 0;
+
+  function step() {
+    if (i < text.length) {
+      masked += "*";
+      el.innerText = masked;
+      i++;
+      setTimeout(step, 90);
+    } else cb();
+  }
+
+  step();
+}
+
+/* ---------------- EVENTS ---------------- */
+
 window.addEventListener("click", startBoot, { once: true });
-window.addEventListener("touchstart", startBoot, { once: true });
-window.addEventListener("pointerdown", startBoot, { once: true });
 
 </script>
 
