@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="utf-8">
-<title>TRI▲GE v0.16.3</title>
+<title>TRI▲GE v0.17</title>
 
 <style>
 
@@ -101,18 +101,25 @@ transform: translateX(calc(1% + 4px));
 
 #wrapper {
   height: 100vh;
-
   display: none;
+
   justify-content: center;
   align-items: center;
+  position: relative;
+}
+
+#layout {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 120px;
 }
 
 #floatingPlay {
-  position: absolute;
-  left: calc(40%+100px+50px); /* 20% visual offset */
-  top: 41%;
-  transform: translateY(-50%);
+  position: relative;
+  left: -120px; /* ≈ “15% visual offset” in stable terms */
   cursor: pointer;
+  z-index: 10;
 }
 
 #panel {
@@ -287,7 +294,7 @@ input[type=range] {
     <span>E</span>
   </div>
 
-  <div id="bootVer">v0.16.3</div>
+  <div id="bootVer">v0.17</div>
 
   <div class="field" id="userField"></div>
   <div class="field" id="passField"></div>
@@ -299,9 +306,13 @@ input[type=range] {
 <!-- PLAYER -->
 <div id="wrapper">
 
+  <div id="layout">
+
   <div id="floatingPlay" class="playTriangle"></div>
-  
+
   <div id="panel">
+    </div> <!-- panel -->
+</div> <!-- layout -->
 
     <div id="playlist"></div>
 
@@ -333,7 +344,7 @@ input[type=range] {
 
 <div id="version">
 Last Functional Build: N/A<br>
-Current Build: 0.16.3
+Current Build: 0.17
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
@@ -374,18 +385,7 @@ const playIcon = document.getElementById("playIcon");
 
 const floatingPlay = document.getElementById("floatingPlay");
 
-floatingPlay.addEventListener("click", () => {
-
-  if (!sound) return;
-
-  if (sound.playing()) {
-    sound.pause();
-  } else {
-    sound.play();
-  }
-
-  updatePlayButton();
-});
+floatingPlay.addEventListener("click", togglePlay);
 
 /* ---------------- AUDIO ---------------- */
 
@@ -405,13 +405,22 @@ function applyVolume() {
 
 function updatePlayButton() {
 
-  const icon = document.getElementById("floatingPlay");
+ const icon = floatingPlay;
 
   if (!sound || !sound.playing()) {
     icon.classList.remove("spinning");
   } else {
     icon.classList.add("spinning");
   }
+}
+
+function togglePlay() {
+  if (!sound) return;
+
+  if (sound.playing()) sound.pause();
+  else sound.play();
+
+  updatePlayButton();
 }
 
 function playTrack(i) {
