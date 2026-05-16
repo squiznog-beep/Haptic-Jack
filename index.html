@@ -205,10 +205,11 @@ const loginSfx = document.getElementById("loginSfx");
 
 let currentTrack = 0;
 
-/* ---------------- PLYR (RESTORED CONTROLS) ---------------- */
+/* ---------------- PLYR ---------------- */
 
 const player = new Plyr(audio, {
-  controls: ['play', 'progress', 'current-time', 'mute', 'volume']
+  controls: ['play', 'progress', 'current-time', 'mute', 'volume'],
+  volume: 0.5   // prevent hard reset to 1 internally
 });
 
 /* ---------------- PLAYLIST ---------------- */
@@ -235,16 +236,6 @@ function renderPlaylist() {
   }
 }
 
-/* ---------------- FIXED VOLUME SYSTEM ---------------- */
-
-function applyVolume(i) {
-
-  const targetVolume = tracks[i].volume ?? 1;
-
-  player.muted = false;
-  player.volume = targetVolume;
-}
-
 /* ---------------- PLAY TRACK ---------------- */
 
 function playTrack(i) {
@@ -261,8 +252,9 @@ function playTrack(i) {
 
   renderPlaylist();
 
-  player.once('loadedmetadata', () => {
-    applyVolume(i);
+  player.once('ready', () => {
+    player.muted = false;
+    player.volume = tracks[i].volume ?? 1;
     player.play().catch(()=>{});
   });
 }
